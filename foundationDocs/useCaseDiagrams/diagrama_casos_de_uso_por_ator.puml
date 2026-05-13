@@ -1,0 +1,370 @@
+' =============================================================================
+' SecretariaOnline2 — casos de uso POR ATOR (legibilidade)
+' Prefixo de id dos diagramas: ucs_ (use case split por ator) — nomes de ficheiro exportados.
+' Um @startuml por ator: uma unica origem de setas, sem sobreposicao entre perfis.
+' Fonte das ligacoes: diagrama_casos_de_uso_secretariaonline2.puml (pagina 1) / casos_de_uso.md
+'
+' Exportar: npx plantuml-cli -tsvg -o svg diagrama_casos_de_uso_por_ator.puml
+' Visao global (todos os atores no mesmo desenho): diagrama_casos_de_uso_secretariaonline2.puml
+' =============================================================================
+
+
+@startuml ucs_A1_visitante
+title UC por ator - A1 Visitante (pre-login)
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A1\nVisitante" as A1
+package "Casos de uso" {
+  usecase "UC-PUB-01\nPagina institucional / erro" as UC_PUB01
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-02\nRecuperar senha" as UC_A02
+  usecase "UC-AUT-03\nRedefinir senha" as UC_A03
+  usecase "UC-CRT-02\nVerificar protocolo" as UC_X02
+  usecase "UC-CRT-03\nVerificar certificado" as UC_X03
+}
+A1 --> UC_PUB01
+A1 --> UC_A01
+A1 --> UC_A02
+A1 --> UC_A03
+A1 --> UC_X02
+A1 --> UC_X03
+note bottom
+  Diagrama global: diagrama_casos_de_uso_secretariaonline2_p1
+end note
+@enduml
+
+
+@startuml ucs_A2_aluno
+title UC por ator - A2 Aluno
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A2\nAluno" as A2
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-04\nPrimeiro acesso" as UC_A04
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-SOL-01\nAbrir solicitacao" as UC_S01
+  usecase "UC-SOL-03\nAcompanhar solicitacao" as UC_S03
+  usecase "UC-SOL-05\nProtocolo PDF" as UC_S05
+  usecase "UC-FOR-01\nSubmeter formativa" as UC_F01
+  usecase "UC-FOR-02\nAcompanhar formativa" as UC_F02
+  usecase "UC-EST-01\nEstagio (aluno)" as UC_E01
+  usecase "UC-TCC-01\nTCC (aluno)" as UC_T01
+  usecase "UC-PRE-03\nConfirmar presenca" as UC_P03
+  usecase "UC-COM-01\nHub comunicacao" as UC_C01
+  usecase "UC-ATD-02\nCiencia atendimento" as UC_R02
+  usecase "UC-CRT-01\nCertificados proprios" as UC_X01
+  usecase "UC-DASH-01\nDashboard" as UC_DASH
+  usecase "UC-ADM-10\nBusca global" as UC_M10
+  usecase "UC-ADM-11\nSuporte / FAQ" as UC_M11
+}
+A2 --> UC_A01
+A2 --> UC_A04
+A2 --> UC_A05
+A2 --> UC_A06
+A2 --> UC_S01
+A2 --> UC_S03
+A2 --> UC_S05
+A2 --> UC_F01
+A2 --> UC_F02
+A2 --> UC_E01
+A2 --> UC_T01
+A2 --> UC_P03
+A2 --> UC_C01
+A2 --> UC_R02
+A2 --> UC_X01
+A2 --> UC_DASH
+A2 --> UC_M10
+A2 --> UC_M11
+@enduml
+
+
+@startuml ucs_A3_egresso
+title UC por ator - A3 Egresso
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A3\nEgresso" as A3
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-EGR-01\nDashboard egresso" as UC_G01
+  usecase "UC-CRT-01\nCertificados proprios" as UC_X01
+}
+A3 --> UC_A01
+A3 --> UC_A05
+A3 --> UC_A06
+A3 --> UC_G01
+A3 --> UC_X01
+@enduml
+
+
+@startuml ucs_A4_professor
+title UC por ator - A4 Professor
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A4\nProfessor" as A4
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-SOL-04\nDeliberar solicitacao" as UC_S04
+  usecase "UC-SOL-03\nAcompanhar solicitacao" as UC_S03
+  usecase "UC-PRE-01\nCRUD eventos" as UC_P01
+  usecase "UC-PRE-02\nOperar validacao evento" as UC_P02
+  usecase "UC-PRE-04\nEncerrar evento" as UC_P04
+  usecase "UC-COM-02\nComunicado de turma" as UC_C02
+  usecase "UC-COM-01\nHub comunicacao" as UC_C01
+  usecase "UC-EST-02\nOrientar estagio" as UC_E02
+  usecase "UC-TCC-02\nOrientar / examinar TCC" as UC_T02
+  usecase "UC-DASH-01\nDashboard" as UC_DASH
+  usecase "UC-ADM-10\nBusca global" as UC_M10
+}
+A4 --> UC_A01
+A4 --> UC_A05
+A4 --> UC_A06
+A4 --> UC_S04
+A4 --> UC_S03
+A4 --> UC_P01
+A4 --> UC_P02
+A4 --> UC_P04
+A4 --> UC_C02
+A4 --> UC_C01
+A4 --> UC_E02
+A4 --> UC_T02
+A4 --> UC_DASH
+A4 --> UC_M10
+@enduml
+
+
+@startuml ucs_A5_caaf
+title UC por ator - A5 Membro CAAF
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A5\nMembro CAAF" as A5
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-FOR-03\nRevisar formativa" as UC_F03
+  usecase "UC-FOR-04\nPainel CAAF" as UC_F04
+  usecase "UC-SOL-03\nAcompanhar solicitacao" as UC_S03
+}
+A5 --> UC_A01
+A5 --> UC_A05
+A5 --> UC_A06
+A5 --> UC_F03
+A5 --> UC_F04
+A5 --> UC_S03
+@enduml
+
+
+@startuml ucs_A6_coe
+title UC por ator - A6 Membro COE
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A6\nMembro COE" as A6
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-EST-03\nPainel COE" as UC_E03
+  usecase "UC-EST-02\nOrientar estagio" as UC_E02
+}
+A6 --> UC_A01
+A6 --> UC_A05
+A6 --> UC_A06
+A6 --> UC_E03
+A6 --> UC_E02
+@enduml
+
+
+@startuml ucs_A7_secretaria
+title UC por ator - A7 Secretaria
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A7\nSecretaria" as A7
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-SOL-02\nSolicitacao interna" as UC_S02
+  usecase "UC-SOL-04\nDeliberar" as UC_S04
+  usecase "UC-SOL-03\nAcompanhar" as UC_S03
+  usecase "UC-SOL-06\nFila solicitacoes" as UC_S06
+  usecase "UC-SOL-07\nAutorizacao imagem" as UC_S07
+  usecase "UC-CAD-01\nCRUD alunos" as UC_D01
+  usecase "UC-CAD-02\nCRUD cursos" as UC_D02
+  usecase "UC-CAD-03\nCRUD disciplinas" as UC_D03
+  usecase "UC-CAD-04\nCalendario" as UC_D04
+  usecase "UC-PRE-01\nCRUD eventos" as UC_P01
+  usecase "UC-PRE-02\nOperar validacao" as UC_P02
+  usecase "UC-PRE-04\nEncerrar evento" as UC_P04
+  usecase "UC-ATD-01\nRegistrar atendimento" as UC_R01
+  usecase "UC-EGR-02\nColacao / diploma" as UC_G02
+  usecase "UC-EGR-03\nExportar egressos" as UC_G03
+  usecase "UC-ADM-06\nImportar planilhas" as UC_M06
+  usecase "UC-ADM-07\nExportar relatorios" as UC_M07
+  usecase "UC-ADM-08\nEstatisticas" as UC_M08
+  usecase "UC-DASH-01\nDashboard" as UC_DASH
+  usecase "UC-ADM-10\nBusca global" as UC_M10
+  usecase "UC-ADM-12\nTarefas internas" as UC_M12
+  usecase "UC-COM-01\nHub comunicacao" as UC_C01
+}
+A7 --> UC_A01
+A7 --> UC_A05
+A7 --> UC_A06
+A7 --> UC_S02
+A7 --> UC_S04
+A7 --> UC_S03
+A7 --> UC_S06
+A7 --> UC_S07
+A7 --> UC_D01
+A7 --> UC_D02
+A7 --> UC_D03
+A7 --> UC_D04
+A7 --> UC_P01
+A7 --> UC_P02
+A7 --> UC_P04
+A7 --> UC_R01
+A7 --> UC_G02
+A7 --> UC_G03
+A7 --> UC_M06
+A7 --> UC_M07
+A7 --> UC_M08
+A7 --> UC_DASH
+A7 --> UC_M10
+A7 --> UC_M12
+A7 --> UC_C01
+@enduml
+
+
+@startuml ucs_A8_coordenador
+title UC por ator - A8 Coordenador
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A8\nCoordenador" as A8
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-CAD-05\nParametros curso" as UC_D05
+  usecase "UC-CAD-04\nCalendario" as UC_D04
+  usecase "UC-ADM-09\nRelatorios coord." as UC_M09
+  usecase "UC-SOL-06\nFila solicitacoes" as UC_S06
+  usecase "UC-SOL-04\nDeliberar" as UC_S04
+  usecase "UC-PRE-02\nOperar validacao" as UC_P02
+  usecase "UC-DASH-01\nDashboard" as UC_DASH
+  usecase "UC-ADM-10\nBusca global" as UC_M10
+  usecase "UC-COM-01\nHub comunicacao" as UC_C01
+}
+A8 --> UC_A01
+A8 --> UC_A05
+A8 --> UC_A06
+A8 --> UC_D05
+A8 --> UC_D04
+A8 --> UC_M09
+A8 --> UC_S06
+A8 --> UC_S04
+A8 --> UC_P02
+A8 --> UC_DASH
+A8 --> UC_M10
+A8 --> UC_C01
+@enduml
+
+
+@startuml ucs_A9_admin
+title UC por ator - A9 Administrador
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "A9\nAdministrador" as A9
+package "Casos de uso" {
+  usecase "UC-AUT-01\nAutenticar-se" as UC_A01
+  usecase "UC-AUT-05\nPerfil e seguranca" as UC_A05
+  usecase "UC-AUT-06\nPreferencias notificacao" as UC_A06
+  usecase "UC-ADM-01\nCRUD usuarios" as UC_M01
+  usecase "UC-ADM-02\nFGAC" as UC_M02
+  usecase "UC-ADM-03\nTipos solicitacao" as UC_M03
+  usecase "UC-COM-03\nTemplates" as UC_C03
+  usecase "UC-ADM-04\nOutbox / jobs" as UC_M04
+  usecase "UC-ADM-05\nAudit log" as UC_M05
+  usecase "UC-PRE-01\nCRUD eventos" as UC_P01
+  usecase "UC-PRE-04\nEncerrar evento" as UC_P04
+}
+A9 --> UC_A01
+A9 --> UC_A05
+A9 --> UC_A06
+A9 --> UC_M01
+A9 --> UC_M02
+A9 --> UC_M03
+A9 --> UC_C03
+A9 --> UC_M04
+A9 --> UC_M05
+A9 --> UC_P01
+A9 --> UC_P04
+@enduml
+
+
+@startuml ucs_S6_verificador
+title UC por ator - S6 Verificador externo
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam actorStyle awesome
+skinparam ArrowThickness 1.5
+left to right direction
+actor "S6\nVerificador\nexterno" as S6
+package "Casos de uso (publico)" {
+  usecase "UC-CRT-02\nVerificar protocolo" as UC_X02
+  usecase "UC-CRT-03\nVerificar certificado" as UC_X03
+}
+S6 --> UC_X02
+S6 --> UC_X03
+@enduml
