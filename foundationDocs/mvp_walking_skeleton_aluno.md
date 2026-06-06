@@ -9,7 +9,6 @@
 
 ## 1. Resumo executivo
 
-Em 15 dias **não** se entrega o ão ~46 rotas, 29 tabelas, 8 bouproduto inteiro (snded contexts). O que se entrega — e impressiona uma banca — é um **walking skeleton**: uma **fatia vertical fina e funcional** que atravessa **todas as camadas reais** do produto (Design System no Figma → tokens no Cursor → React → API REST → Postgres) usando **a arquitetura definitiva**, e não um protótipo descartável.
 Em 15 dias **não** se entrega o produto inteiro (são ~46 rotas, 29 tabelas, 8 bounded contexts). O que se entrega — e impressiona uma banca — é um **walking skeleton**: uma **fatia vertical fina e funcional** que atravessa **todas as camadas reais** do produto (Design System no Figma → tokens no Cursor → React → API REST → Postgres) usando **a arquitetura definitiva**, e não um protótipo descartável.
 
 A fatia escolhida é a **jornada autenticada do Aluno** terminando na tela `/inicio` (Dashboard do Aluno):
