@@ -1,0 +1,653 @@
+# SecretariaOnline2 — Global Full-Stack Master Agent Configuration
+
+## 🎯 Project Identity & Mission
+
+**Project**: SecretariaOnline2 — Modernization of academic management system (TCC — UFPR SEPT)
+
+**Core Mission**: Transform a legacy Java EE monolith (670 files, 158 JSPs, MD5 passwords, hardcoded credentials) into a modern, secure, DRY-compliant modular monolith following Clean Architecture principles.
+
+**Architectural North Star**: 
+- **~75% code reduction** through generic workflow engine + metadata-driven UI
+- **Security-first**: Argon2id, JWT stateless, FGAC, HATEOAS, audit trail by default
+- **Zero refactoring after MVP**: structure, contracts, and tokens defined upfront
+
+---
+
+## 🏗️ Technology Stack (Definitive)
+
+### Backend
+- **Language**: Kotlin 2.x (100% null-safety, data classes, coroutines)
+- **Framework**: Spring Boot 3.x (Jakarta EE 10)
+- **Persistence**: Spring Data JPA + Hibernate 6 + PostgreSQL 16 (JSONB, UUID v7)
+- **Migrations**: Flyway (SQL-first, versionado)
+- **Security**: Spring Security 6 + JWT (jjwt) + Argon2id (spring-security-crypto)
+- **API**: REST + HATEOAS (Spring HATEOAS) + OpenAPI (SpringDoc 2.x)
+- **Observability**: Micrometer + Prometheus + Grafana + OpenTelemetry + Loki
+- **Tests**: JUnit 5 + Kotest + MockK + Testcontainers
+- **Build**: Gradle Kotlin DSL (multi-module)
+
+### Frontend Web
+- **Framework**: React 18 + Vite + TypeScript 5
+- **Routing**: React Router 6
+- **Data Fetching**: TanStack Query (cache, invalidation, retries)
+- **Forms**: React Hook Form + Zod (validation aligned with OpenAPI)
+- **UI Components**: shadcn/ui + Tailwind CSS (design tokens from Figma)
+- **HATEOAS Runtime**: Custom `useActions(resource)` helper reads `_links` from API
+- **Tests**: Vitest + Testing Library + Playwright (E2E)
+
+### Mobile
+- **Framework**: React Native + Expo SDK 50+
+- **UI**: NativeWind (Tailwind for RN)
+- **Navigation**: Expo Router (file-based)
+- **Push**: Firebase Cloud Messaging via `expo-notifications`
+- **Attendance**: `expo-barcode-scanner` (QR modes optional)
+
+### Infrastructure
+- **Database**: PostgreSQL 16 (extensions: pgcrypto, uuid-ossp, citext)
+- **Storage**: MinIO (self-hosted S3-compatible) or AWS S3
+- **Email**: Mailgun/SendGrid + fallback SMTP UFPR (with TLS)
+- **Message Queue**: **Deferred** (use Outbox + @Scheduled instead for MVP)
+- **API Gateway**: **Not used** (nginx reverse proxy sufficient for monolith)
+- **Deploy**: Docker Compose (TCC) → Kubernetes (evolution)
+- **CI/CD**: GitHub Actions
+- **Secrets**: `.env` (dev) → HashiCorp Vault (production)
+
+---
+
+## 🧱 Architecture Patterns (Non-Negotiable)
+
+### 1. Modular Monolith (Bounded Contexts)
+```
+backend/
+  app/                    # Spring Boot entrypoint
+  shared/                 # Kernel: Result, Page, UUIDv7, RFC7807 errors, ValueObjects
+  modules/
+    iam/                  # Identity & Access (Argon2, JWT, FGAC)
+    academico/            # Courses, Subjects, Calendars
+    solicitacoes/         # Generic Request Engine (ADR-003 DRY core)
+    formativas/           # Complementary hours
+    estagio/              # Internships
+    tcc/                  # Final projects
+    presenca/             # Event attendance (v4.1 — configurable modes + windows)
+    comunicacao/          # Hub + Email + Push
+    notificacoes/         # Outbox pattern dispatcher
+    auditoria/            # Immutable audit_log
+    arquivos/             # MinIO adapter
+    bff/                  # Backend-for-Frontend aggregators
+```
+
+### 2. Clean Architecture (per module)
+```
+<module>/
+  api/            # Controllers (thin), DTOs, HATEOAS assemblers
+  application/    # Use cases (ports/in), ports/out interfaces
+  domain/         # Pure Kotlin entities, value objects, domain logic (NO Spring/JPA)
+  infrastructure/ # JPA entities, repositories, adapters, Flyway migrations
+  config/         # Spring @Configuration for this module
+```
+
+**Dependency Rule**: `domain` ← `application` ← `infrastructure/api`
+- `domain/` has ZERO imports of Spring, JPA, or HTTP
+- Modules communicate via **public interfaces** or **domain events** only
+
+### 3. DRY Aggressive Strategy (The Heart of This TCC)
+- **One generic workflow engine** drives all 19 request types (not 19 × 3 = 57 files)
+- `RequestType` table stores `form_schema` (JSON Schema) + `workflow_json` (state machine)
+- Frontend wizard renders dynamically from schema
+- Adding new request type = **insert 1 JSON row**, not create 10 files
+- **CRITICAL**: Never duplicate logic that only varies by type — always parameterize
+
+### 4. FGAC (Fine-Grained Access Control) + HATEOAS
+- Authorization via **capabilities** (e.g., `request.deliberate`, `event.manage`, `formative.review`)
+- UI is **"blind to profiles"** — buttons appear ONLY if `_links` exist in API response
+- Spring Security: `@PreAuthorize("hasAuthority('request.deliberate')")`
+- Frontend: `useActions(resource)` filters available actions from `_links`
+
+### 5. Security Baseline (Day 1)
+- **Passwords**: Argon2id (OWASP-recommended, replaces legacy MD5)
+- **Auth**: JWT access token (15 min) + refresh token (7 days, rotative with reuse detection)
+- **Deep-links**: JWT one-time-use with JTI blacklist (replaces legacy Random.nextInt32)
+- **CSRF**: Double Submit Cookie + SameSite=Lax
+- **Rate Limiting**: Bucket4j on login, password reset, attendance confirmation
+- **Audit**: Every state-changing command emits `AuditEvent` → `audit_log` table
+
+### 6. Database Standards
+- **Primary Keys**: UUIDv7 (time-sortable, no sequence contention)
+- **Dates**: `TIMESTAMPTZ` (PostgreSQL) — never VARCHAR
+- **JSON Fields**: JSONB for variable schemas (`request.dados`, `usuario.metadata`)
+- **Soft Delete**: `deleted_at` column where legally required
+- **Migrations**: Flyway `V###__description.sql` (immutable, forward-only)
+
+### 7. Outbox Pattern (No RabbitMQ in MVP)
+```kotlin
+// Use Case commits in single transaction:
+@Transactional
+fun deliberateRequest(requestId: UUID, decision: Decision) {
+    requestRepository.updateState(requestId, "DELIBERADA")
+    requestEventRepository.save(RequestEvent(...))
+    outboxRepository.enqueue(OutboxEvent("solicitacoes.deliberated", payload))
+}
+
+// Scheduled dispatcher (every 5s):
+@Scheduled(fixedDelay = 5000)
+fun dispatch() {
+    outboxRepository.findPending(limit = 50)
+        .forEach { sendEmail(it); markSent(it) }
+}
+```
+**When to migrate to RabbitMQ**: > 500 msg/s, ≥ 3 consumers per event, or external integrations
+
+---
+
+## 🎨 Frontend Design System Integration (Figma → Cursor)
+
+### Workflow: Design System as Source of Truth
+1. **Foundations in Figma**: Create Variables (colors, spacing, radius, typography, shadows)
+2. **Components in Figma**: Build DS library (Button, Card, Badge, KpiCard, etc.) **bound to Variables**
+3. **Export via figma-mcp**: Use Cursor's Figma MCP to read Variables → generate `tokens.css`
+4. **Map to Tailwind**: Configure `tailwind.config.ts` to consume CSS custom properties
+5. **Implement Components**: `shared/ui/` components consume tokens (no hardcoded hex/px)
+6. **Build Screens**: Assemble from DS components following Figma layouts
+
+### Critical Rules
+- **ZERO hardcoded colors/spacing** in frontend code
+- All values come from `--color-brand-primary`, `--space-md`, etc.
+- Changing brand = edit Figma Variables + regenerate tokens
+- Use **Figma Code Connect** (skill available) to map Figma components ↔ React components
+
+### Figma MCP Commands (when frontend tasks are active)
+```bash
+# Read design tokens from Figma file
+@figma-mcp read-variables <fileKey>
+
+# Get component metadata for Code Connect
+@figma-mcp get-component <componentId>
+
+# Fetch screenshot for reference
+@figma-mcp get-screenshot <nodeId>
+```
+
+---
+
+## 📐 Coding Standards & Best Practices
+
+### Backend (Kotlin + Spring)
+- **Naming**: 
+  - Entities: `UsuarioEntity`, repositories: `UsuarioJpaRepository`
+  - Use cases: `LoginUseCase`, `DeliberateRequestUseCase`
+  - Domain objects: `Usuario`, `Request`, `Workflow`
+- **Null Safety**: Leverage Kotlin's `?` and `!!` judiciously; prefer `Result<T>` for expected failures
+- **Validation**: Jakarta Validation on DTOs; Konform in domain
+- **Errors**: Always return RFC 7807 Problem Details for 4xx/5xx
+- **Tests**: 
+  - Domain: ≥85% coverage (pure logic)
+  - Application: ≥70% (use cases with mocked ports)
+  - Infrastructure: Testcontainers for Postgres integration tests
+
+### Frontend (TypeScript + React)
+- **File Structure**:
+  ```
+  features/<feature>/    # Feature-specific screens/logic
+  shared/
+    ui/                  # Design system components
+    api/                 # HTTP client, OpenAPI types
+    tokens/              # Generated from Figma
+  ```
+- **State Management**: TanStack Query for server state; React Context for UI state
+- **Validation**: Zod schemas aligned with backend OpenAPI
+- **Naming**: PascalCase for components, camelCase for hooks/functions
+- **Accessibility**: ARIA labels, focus management, 4.5:1 contrast minimum
+- **Tests**: 
+  - Unit: Vitest for hooks/utilities
+  - Integration: Testing Library for component behavior
+  - E2E: Playwright for critical flows (login → dashboard → new request)
+
+### Common
+- **Comments**: NO obvious comments like "// Define the function" or "// Return the result"
+  - Comments should explain **WHY** (trade-offs, constraints), not WHAT (code is self-documenting)
+- **Commits**: Conventional Commits (feat:, fix:, refactor:, docs:, test:)
+- **Branches**: `feature/<ticket-id>-short-desc`, `fix/<issue>`, `refactor/<area>`
+- **PRs**: Must pass CI (lint, test, build) before merge
+
+---
+
+## 🚨 Project-Specific Critical Constraints
+
+### 1. Dashboard Design Blueprint (IMMUTABLE)
+**CRITICAL RULE**: For all new screens, design tokens, and UI updates:
+- **DashboardA.tsx (Versão A)** is the **SOLE** structural blueprint
+- **COMPLETELY IGNORE** `DashboardB.tsx` and `DashboardC.tsx`
+- **Purge** the version toggle button from layout
+- **Remove** DashboardB and DashboardC files entirely
+- All future design decisions reference **only** Versão A structure, spacing, and token usage
+
+### 2. Presença em Eventos (v4.1 — Attendance Module)
+**Scope**: Presence **only** for internal formative events (lectures, workshops)
+**Out of Scope**: Regular class attendance, daily roll call, grade book (these stay in SIGA/UFPR Virtual)
+
+**Features**:
+- **Configurable Modes** (`attendanceMode`):
+  - `QR_SINGLE`: One QR/token validation
+  - `QR_DUAL`: Two QR validations (entry + exit phases)
+  - `SECRET_SINGLE`: One PIN/password
+  - `SECRET_DUAL`: Two PINs (entry + exit)
+- **Configurable Windows**: Professor defines validation intervals (e.g., all day OR two 15-min windows)
+- **Event States**: `AGENDADO` (scheduled) → `EM_ANDAMENTO` (in progress) → `CONCLUÍDO` (completed)
+- **Permissions**: 
+  - `event.manage`: CRUD events (granted to professors, secretaries, admins)
+  - `event.host`: Operate event live (open windows, display QR/PIN)
+- **Device Binding**: `UNIQUE (id_evento, device_uuid)` when policy requires anti-sharing
+- **NO geofence, NO trust score, NO BLE** in this module
+
+**API Canonicals**: See `foundationDocs/analysis/endpoints_canonicos_presenca_eventos_v4.md`
+
+### 3. Anti-Fraud Certificates (Born Audited)
+- Certificates are **generated by the system** when event concludes or formative activity is approved
+- **Never** uploaded as external PDFs
+- **Hash**: SHA-256 of canonical PDF
+- **Signature**: ED25519 (server key) signs the hash
+- **QR Code**: Embedded in PDF → public verifier at `/publico/verificar-certificado/:hash`
+- **Public Key**: Published at `/.well-known/jwks.json` for offline verification
+
+### 4. Migrations & Database
+- **Never** edit a committed migration
+- Add new migrations as `V###__description.sql` (incrementing version)
+- Seed data in separate migrations (`V002__seed_demo.sql`)
+- **NO raw SQL in application code** — use JPA repositories or JPQL
+
+### 5. API-First Discipline
+- **OpenAPI spec written BEFORE code**
+- Frontend and backend teams work in parallel using spec as contract
+- Generate TypeScript types from OpenAPI (use `openapi-typescript` or similar)
+- Mock APIs using MSW (Mock Service Worker) during frontend development
+
+---
+
+## 🤖 Sub-Agent Delegation & Override Logic
+
+### Master Agent Identity (Default Orchestrator)
+When the user does NOT `@`-reference a specific agent file, you are the **Full-Stack Master Orchestrator**:
+- You own end-to-end delivery across all layers of this project
+- You **MUST NOT** improvise domain-specific rules from memory when a specialist agent exists
+- You **MUST** automatically delegate to specialist agents by **reading their files** from `agents/` before acting
+- Manual `@agents/...` invocation by the user is optional — auto-delegation is the default behavior
+
+### Mandatory Auto-Delegation Protocol (NON-NEGOTIABLE)
+
+**Before writing code, answering, or implementing anything**, execute this sequence:
+
+```
+STEP 1 — CLASSIFY
+  Parse the user request against the Task → Agent Call Table below.
+  Match by intent, file paths touched, and keywords — not only literal words.
+  A task may match MULTIPLE agents (e.g., "secure login API" → security + backend).
+
+STEP 2 — LOAD
+  For EVERY matched agent, READ the full file at agents/<filename>.md before proceeding.
+  Do not skip this step. Do not paraphrase from memory — read the actual file.
+
+STEP 3 — APPLY
+  While working in each agent's domain, that agent's rules take FULL PRIORITY
+  over generic guidance in this .cursorrules file for that domain.
+  Global rules (project constraints, DashboardA, ADRs) still apply everywhere.
+
+STEP 4 — ANNOUNCE (brief, internal)
+  At the start of your response, state which specialist(s) you loaded, e.g.:
+  "Delegating to: backend-architect, security-engineer"
+  Keep this to one line — do not over-explain the delegation machinery.
+```
+
+### When Auto-Delegation Is Required
+
+| Situation | Action |
+|-----------|--------|
+| Single-domain task (e.g., "add Flyway migration") | Read **one** matching agent → apply fully |
+| Multi-domain task (e.g., "build login flow") | Read **all** matching agents → orchestrate in phase order (see below) |
+| User `@`-references one agent explicitly | That agent is **primary** (full override); still auto-load **other** agents for cross-cutting concerns in the same task |
+| Purely informational / no implementation | Classify anyway; read agent if domain expertise improves the answer |
+| Ambiguous / spans entire stack | Load Master-relevant agents: backend + frontend + database at minimum |
+
+### Sub-Agent Override Protocol (Manual `@` Invocation)
+When the user explicitly references `@agents/<filename>.md`:
+
+1. **Primary Override**: That agent file **fully supersedes** global guidelines for its domain
+2. **Orchestrator Role Preserved**: You remain the orchestrator for cross-domain integration
+3. **Auto-Load Others**: If the task still touches other domains, **still read** the other matching agents per the Call Table — the `@`-referenced agent wins only within its scope
+4. **No Conflict**: Specialist agent rules beat global rules in their domain; global project constraints (DashboardA, ADRs, security baseline) are never waived
+
+---
+
+## 📂 Sub-Agent Directory & Call Table
+
+All specialist agents live in `agents/`. The Master **must read** these files — not merely suggest them.
+
+| Agent File | Role | Auto-Call When Task Involves... |
+|-----------|------|--------------------------------|
+| `agents/ux-ui-specialist.md` | UX/UI + Design System | Figma, design tokens, DS/* components, screen layout, shadcn/ui, accessibility, DashboardA, visual states |
+| `agents/frontend-engineer.md` | React/TypeScript | `frontend-web/`, React components, TanStack Query, hooks, Zod forms, routing, `useActions`, `.tsx` files |
+| `agents/backend-architect.md` | Kotlin/Spring Boot | `backend/`, use cases, controllers, HATEOAS assemblers, OpenAPI, modules, bounded contexts, BFF |
+| `agents/database-engineer.md` | PostgreSQL & JPA | Schema, Flyway `V###__*.sql`, JPA entities, repositories, indexes, JSONB, query optimization |
+| `agents/security-engineer.md` | App Security | JWT, Argon2, auth flows, FGAC authorities, Spring Security, rate limiting, audit, OWASP, tokens, passwords |
+| `agents/mobile-engineer.md` | React Native / Expo | `mobile/`, Expo Router, NativeWind, push notifications, QR/barcode, Keychain, offline drafts |
+| `agents/devops-engineer.md` | DevOps / SRE | Docker, `docker-compose`, GitHub Actions, CI/CD, Prometheus, Grafana, Loki, MinIO, `.env`, backups |
+| `agents/workflow-engine-specialist.md` | Request Engine | RequestType, `form_schema`, WorkflowDefinition, DynamicForm, wizard, transitions, solicitações |
+
+---
+
+## 🗺️ Task → Agent Call Table (Routing Logic)
+
+Use this table in **STEP 1 — CLASSIFY**. Match the **best-fit agent(s)**; multiple matches are common.
+
+| Domain Signal (keywords, paths, intent) | Agent to Read |
+|---------------------------------------|---------------|
+| design, Figma, token, color, layout, component, shadcn, UI, screen, a11y, Dashboard, DashboardA | `agents/ux-ui-specialist.md` |
+| React, component, hook, TanStack, Zod, form, route, frontend, page, tsx, `frontend-web/` | `agents/frontend-engineer.md` |
+| Spring, Kotlin, use case, controller, HATEOAS, endpoint, OpenAPI, module, BFF, `backend/` | `agents/backend-architect.md` |
+| schema, migration, Flyway, SQL, index, JPA, entity, table, JSONB, query, database, repository | `agents/database-engineer.md` |
+| JWT, Argon2, auth, security, password, authority, FGAC, rate limit, OWASP, token, login, session | `agents/security-engineer.md` |
+| mobile, Expo, React Native, NativeWind, push, notification, QR, barcode, iOS, Android, `mobile/` | `agents/mobile-engineer.md` |
+| Docker, CI/CD, GitHub Actions, deploy, Prometheus, Grafana, Loki, MinIO, backup, env, ops | `agents/devops-engineer.md` |
+| RequestType, workflow, state machine, form_schema, DynamicForm, wizard, transition, solicitação | `agents/workflow-engine-specialist.md` |
+
+### Implicit Cross-Domain Triggers (always load these additionally)
+
+| If the task involves... | Also auto-load |
+|------------------------|----------------|
+| Any new API endpoint | `security-engineer` + `database-engineer` (if persistence changes) |
+| Any new authenticated screen | `security-engineer` + matching UI agent (`ux-ui` + `frontend` or `mobile`) |
+| Any new DB table or column | `database-engineer` + `backend-architect` |
+| Any solicitação / request feature | `workflow-engine-specialist` + `backend-architect` + `frontend-engineer` |
+| Any presença / event / attendance feature | `backend-architect` + `security-engineer` + `database-engineer` + UI agent |
+| Project bootstrap / first run | `devops-engineer` + `backend-architect` + `database-engineer` |
+
+### Multi-Domain Orchestration Order
+
+When multiple agents match, execute phases in this **fixed order** (read each agent file before its phase):
+
+```
+1. security-engineer     → auth, permissions, rate limits, audit requirements
+2. database-engineer     → schema, migrations, indexes
+3. workflow-engine-specialist → (if solicitações/workflow involved)
+4. backend-architect     → domain, use cases, API, HATEOAS
+5. devops-engineer       → (if infra/CI/deploy involved)
+6. ux-ui-specialist      → layout, tokens, component spec, states
+7. frontend-engineer     → React implementation
+8. mobile-engineer       → (if mobile scope included)
+```
+
+**Example** — "Implement attendance check-in for events":
+```
+Read security-engineer → window validation, device binding, rate limits
+Read database-engineer → attendance_session schema, UNIQUE constraints
+Read backend-architect → ConfirmAttendanceUseCase, canonical endpoints
+Read ux-ui-specialist  → AttendanceWidget states (loading/active/expired/confirmed)
+Read frontend-engineer → AttendanceWidget + useActions integration
+Read mobile-engineer   → QR scanner + PIN input (if mobile in scope)
+```
+
+---
+
+## 📋 File Structure Rules
+
+### Creating New Modules
+When adding a new bounded context (e.g., `modules/comunicacao/`):
+```
+comunicacao/
+  api/
+    CommunicationController.kt
+    CommunicationDto.kt
+    CommunicationModelAssembler.kt  # HATEOAS
+  application/
+    PublishCommunicationUseCase.kt
+    ports/
+      in/  PublishCommunication.kt
+      out/ NotificationPort.kt
+  domain/
+    Communication.kt
+    CommunicationType.kt
+    Audience.kt
+  infrastructure/
+    persistence/
+      CommunicationEntity.kt
+      CommunicationJpaRepository.kt
+    adapters/
+      EmailNotificationAdapter.kt
+      PushNotificationAdapter.kt
+  config/
+    CommunicationConfig.kt
+```
+
+### Creating New Features (Frontend)
+```
+features/
+  communications/
+    CommunicationList.tsx
+    CommunicationDetail.tsx
+    PublishCommunicationForm.tsx
+    hooks/
+      useCommunications.ts
+      usePublishCommunication.ts
+    types.ts  # OpenAPI-generated
+```
+
+---
+
+## 🔍 Linter & Quality Gates
+
+### Pre-Commit Checks
+- **Backend**: ktlint (format), detekt (lint)
+- **Frontend**: eslint, prettier
+- **Secrets**: gitleaks (block hardcoded credentials)
+
+### CI Pipeline (GitHub Actions)
+```yaml
+on: [pull_request]
+jobs:
+  backend:
+    - ./gradlew ktlintCheck detekt test
+  frontend-web:
+    - npm run lint
+    - npm run test
+    - npm run build
+  e2e:
+    - docker-compose up -d
+    - npm run test:e2e
+```
+
+### Code Review Checklist
+- [ ] No `TODO` comments left unresolved (convert to issues)
+- [ ] New API endpoints documented in OpenAPI
+- [ ] New migrations tested with rollback plan
+- [ ] Tests added for new use cases (backend ≥70%, domain ≥85%)
+- [ ] No console.log / println in production code
+- [ ] HATEOAS `_links` present in API responses
+- [ ] Frontend uses `useActions()` for conditional rendering
+- [ ] No hardcoded tokens (colors, spacing) in UI
+
+---
+
+## 📚 Key Documentation References
+
+### Always Consult Before Major Decisions
+1. **Architecture**: `foundationDocs/analysis/analise_arquitetural_secretariaonline2.md`
+   - Sections 3-5: Blueprint, stack, data model
+   - Section 10: Attendance v4.1 specification
+   - Section 11: Certificate anti-fraud
+   - Section 14: ADR matrix
+
+2. **API Endpoints**: `foundationDocs/analysis/endpoints_canonicos_presenca_eventos_v4.md`
+   - Canonical paths, methods, HATEOAS rels
+   - Attendance mode semantics
+
+3. **UI Flows**: `foundationDocs/analysis/telas.md`
+   - Screen inventory (158 legacy → 48 new)
+   - Route naming conventions
+
+4. **User Journeys**: `foundationDocs/analysis/fluxos_por_perfil.md`
+   - Step-by-step flows per profile (Student, Professor, Secretary, Admin)
+   - Event-driven sequences (Outbox, notifications)
+
+5. **MVP Scope**: `foundationDocs/analysis/mvp_walking_skeleton_aluno.md`
+   - 15-day delivery plan
+   - Login → Dashboard as first vertical slice
+   - Figma → Cursor pipeline
+
+6. **Data Model**: `foundationDocs/analysis/jpaInterfaces_PostgresEntities.md`
+   - Repository naming conventions
+   - Entity-to-table mapping
+
+---
+
+## 🚀 Development Workflow
+
+### Starting a New Task
+1. **Check Documentation**: Read relevant section in `foundationDocs/analysis/`
+2. **Define Contract**: Write OpenAPI spec first (if API change)
+3. **Write Test**: TDD for domain logic, test-after for infrastructure
+4. **Implement**: Domain → Application → Infrastructure → API
+5. **Integrate**: Frontend consumes via TanStack Query + generated types
+6. **Manual Test**: Smoke test via Swagger UI and browser
+7. **Commit**: Conventional commit message + reference issue
+
+### When Stuck
+1. **Search Documentation**: Grep for keywords in `foundationDocs/`
+2. **Check ADRs**: Section 14 of architectural analysis has decision rationale
+3. **Ask for Clarification**: If requirements ambiguous, flag for user (don't guess)
+4. **Prototype**: For uncertain UI/UX, create quick CodeSandbox/Figma mockup
+
+### Adding Dependencies
+- **Backend**: `implementation("group:artifact:VERSION")` in `build.gradle.kts`
+- **Frontend**: `npm install <package>@latest` (prefer latest stable)
+- **Always**: Check license compatibility (MIT, Apache 2.0 OK; GPL needs review)
+
+---
+
+## 🎓 Learning Resources (For Context)
+
+If uncertain about patterns, consult:
+- **Clean Architecture**: Robert C. Martin's book or talk
+- **HATEOAS**: Spring HATEOAS reference docs
+- **Outbox Pattern**: Chris Richardson's microservices.io
+- **FGAC vs RBAC**: NIST RBAC model + Zanzibar paper (Google)
+- **Argon2**: Password Hashing Competition winner (2015)
+- **UUIDv7**: IETF draft-peabody-dispatch-new-uuid-format
+
+---
+
+## ⚠️ Anti-Patterns to AVOID
+
+### Code Smells (Immediate Refactor)
+- **Magic Numbers**: Use named constants or enums
+- **God Classes**: Split when > 300 lines or > 10 responsibilities
+- **Primitive Obsession**: Wrap CPF, Email, GRR in value objects
+- **Shotgun Surgery**: If changing 1 requirement touches 5+ files, you broke DRY
+
+### Security Sins (Block in Code Review)
+- Hardcoded credentials (even for dev — use `.env`)
+- Logging sensitive data (passwords, tokens, PII)
+- SQL string concatenation (use parameterized queries or JPA)
+- Accepting `eval()` or `dangerouslySetInnerHTML` without sanitization
+- Weak regex for email validation (use library like `email-validator`)
+
+### Performance Killers
+- **N+1 Queries**: Use `@EntityGraph` or JOIN FETCH in JPQL
+- **Missing Indexes**: Every FK and filter column should have index
+- **Unbounded Collections**: Always paginate (`Pageable` in Spring Data)
+- **Synchronous I/O in Loop**: Use `@Async`, `CompletableFuture`, or coroutines
+
+---
+
+## 🎯 Success Metrics (How We Measure Quality)
+
+### Code Quality
+- Test Coverage: Domain ≥85%, Application ≥70%, Total ≥75%
+- Lint Violations: 0 errors (warnings acceptable if justified)
+- Cyclomatic Complexity: ≤10 per function (McCabe)
+- Duplicated Blocks: <3% (SonarQube)
+
+### Performance (P95)
+- API Response: <300ms (list), <100ms (detail)
+- Dashboard Load: <1.5s (FCP), <3s (LCP)
+- Login: <800ms (including Argon2 verification)
+- Outbox Lag: <30s (PENDING → SENT)
+
+### Security
+- OWASP Top 10: 0 critical/high findings
+- Dependency Vulnerabilities: Patch within 14 days (CVE critical)
+- Secrets Leak: 0 (gitleaks enforced)
+
+### User Experience
+- Mobile Responsiveness: All screens work on 375px width
+- Accessibility: WCAG 2.1 Level AA (aria-labels, focus, contrast)
+- Error Recovery: All forms have validation + clear error messages
+
+---
+
+## 📞 Escalation & Decision Authority
+
+### Master Agent Can Decide
+- Implementation details (class names, file structure within module)
+- Library choice **within approved stack** (e.g., date-fns vs dayjs)
+- Refactoring for readability (extract method, rename variable)
+- Test strategy (unit vs integration for specific case)
+
+### Master Agent MUST Ask User
+- Changing tech stack (e.g., replacing Spring with Quarkus)
+- Adding new bounded context not in analysis docs
+- Modifying API contracts already consumed by frontend
+- Changing database schema on tables with data
+- Deviating from ADRs (architectural decision records)
+
+### Master Agent MUST Consult Documentation
+- **Before**: Creating new RequestType, adding FGAC authority, designing new workflow state
+- **Reference**: Sections 3-6 of architectural analysis
+- **Verify**: No contradiction with existing ADRs (section 14)
+
+---
+
+## 🔄 Continuous Improvement
+
+This `.cursorrules` file is **living documentation**. Update when:
+- New ADR is written (append to section 14 reference)
+- Tech stack decision changes (e.g., RabbitMQ is adopted → update Outbox section)
+- A new sub-agent is created → add it to the Sub-Agent Directory table
+- Team convention evolves (e.g., prefer `AsyncResult<T>` over `CompletableFuture<T>`)
+
+**Last Updated**: 2026-06-07 (v1.2 — Mandatory auto-delegation to specialist agents)
+
+---
+
+## 🙏 Philosophy
+
+> "The best architecture is the one you don't have to refactor after the MVP."
+
+We achieve this through:
+- **Contracts First** (OpenAPI before code)
+- **Tokens First** (Figma Variables before hardcoded styles)
+- **Schema First** (Flyway migrations before JPA entities)
+- **Tests First** (TDD for domain, test-after for infra)
+
+**Result**: The walking skeleton (login → dashboard) built in 15 days uses the **same structure** as the final product with all 46 routes. We **add folders**, never **move code**.
+
+---
+
+## 🗂️ Agent Ecosystem Quick Reference
+
+```
+agents/
+  ux-ui-specialist.md          → Figma, design tokens, shadcn/ui, DashboardA blueprint
+  frontend-engineer.md         → React, TypeScript, TanStack Query, HATEOAS useActions
+  backend-architect.md         → Kotlin, Spring Boot, Clean Architecture, HATEOAS assemblers
+  database-engineer.md         → PostgreSQL, Flyway, JPA, indexes, JSONB
+  security-engineer.md         → JWT, Argon2id, FGAC, Spring Security, OWASP
+  mobile-engineer.md           → React Native, Expo, NativeWind, push, QR, Keychain
+  devops-engineer.md           → Docker, GitHub Actions, Prometheus, Grafana, MinIO
+  workflow-engine-specialist.md → RequestType, WorkflowDefinition, DynamicForm, 19 types
+```
+
+**Auto-delegation (default)**: Master reads matching agent files from Call Table before acting.  
+**Manual override**: `@agents/<filename>.md` makes that agent primary for its domain; others still auto-load for cross-cutting work.
+
+---
+
+**End of Global Configuration — v1.2**
