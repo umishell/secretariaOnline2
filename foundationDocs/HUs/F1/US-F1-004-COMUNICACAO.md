@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `communication.read` |
 | **API primária** | `GET /communications`, `POST /communications/:id/read` |
-| **Frames Figma** | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| **Frames Figma** | [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3378) · [Skeleton/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=109-15666) · [Error/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=109-16238) · [Empty/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=142-12886) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=106-8134) · [Skeleton/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=149-14906) · [Error/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=149-16932) · [Empty/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=149-19099) |
 | **Spec de tela** | `telasFigma/telas1/F1.6-comunicacao.md` |
 
 ---
@@ -112,3 +112,4 @@ Então as tabs são scrolláveis horizontalmente sem quebrar layout
 | Spec de tela | `telasFigma/telas1/F1.6-comunicacao.md` |
 | Fluxo F1.9 | `foundationDocs/analysis/fluxos_por_perfil.md` §2 F1.9 |
 | Página Figma F1 | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| Frame principal | [F1.6 — Comunicação / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3378) |

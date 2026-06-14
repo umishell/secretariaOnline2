@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `certificate.view_own` |
 | **API primária** | `GET /certificates?beneficiario=me` |
-| **Frames Figma** | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| **Frames Figma** | [Loaded/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=89-4348) · [Empty/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=89-4993) · [Skeleton/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=109-13264) · [Error/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=109-13860) · [Loaded/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=112-14910) · [Empty/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=112-17908) |
 | **Spec de tela** | `telasFigma/telas1/F1.19-certificados.md` |
 
 ---
@@ -84,3 +84,4 @@ Então o KpiCard de certificados no dashboard (US-F1-001) incrementa em 1
 | Fluxo de emissão | `foundationDocs/analysis/fluxos_por_perfil.md` §2 F1.6 |
 | Verificação pública | [US-F0-007](../F0/US-F0-007-VERIFICAR-CERTIFICADO.md) |
 | Página Figma F1 | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| Frame principal | [F1.19 — Certificados / Loaded / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=89-4348) |

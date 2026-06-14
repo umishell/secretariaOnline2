@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `dashboard.view_own` |
 | **API primária** | `GET /bff/dashboard/aluno` |
-| **Frames Figma** | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| **Frames Figma** | [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=52-480) · [Skeleton/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=56-818) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=56-974) · [Empty/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=141-12709) |
 | **Spec de tela** | `telasFigma/telas1/F1.1-inicio-aluno.md` |
 | **Obs.** | TELA REFERÊNCIA DO PROJETO (DashboardA). Toda tela autenticada herda estrutura desta. |
 
@@ -222,3 +222,4 @@ Authorization: Bearer {accessToken}
 | Fluxo aluno | `foundationDocs/analysis/fluxos_por_perfil.md` §2 |
 | MVP Walking Skeleton | `foundationDocs/analysis/mvp_walking_skeleton_aluno.md` |
 | Página Figma F1 | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| Frame principal | [F1.1 — Dashboard Aluno / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=52-480) |

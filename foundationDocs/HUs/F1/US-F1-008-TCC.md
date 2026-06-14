@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `tcc.view_own` |
 | **API primária** | `GET /tccs?aluno=me`, `GET /tccs/{id}`, `POST /tccs/{id}/upload` |
-| **Frames Figma** | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| **Frames Figma** | **F1.15:** [Loaded/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=89-3926) · [Empty/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=142-16710) · [Skeleton/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=109-10862) · [Error/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=109-11458) · [Loaded/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=112-13162) · [Empty/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=149-23473) · **F1.16:** [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=90-5367) · [Skeleton/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=148-21821) · [404/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=148-23726) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=112-22575) |
 | **Specs de tela** | `telasFigma/telas1/F1.15-tccs-lista.md` · `F1.16-tccs-detalhe.md` |
 
 ---
@@ -84,3 +84,5 @@ Então exibe composição da banca com nome e papel de cada membro
 | Specs de tela | `telasFigma/telas1/F1.15-tccs-lista.md`, `F1.16-tccs-detalhe.md` |
 | Fluxo banca | `foundationDocs/analysis/fluxos_por_perfil.md` §4 F3.7 |
 | Página Figma F1 | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| Frame F1.15 principal | [F1.15 — TCCs / Loaded / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=89-3926) |
+| Frame F1.16 principal | [F1.16 — TCCs detalhe / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=90-5367) |

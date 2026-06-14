@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `user.update_own_profile` / `user.*` |
 | **API primária** | `GET /me`, `PATCH /me`, `GET /me/sessions`, `DELETE /me/sessions/:id`, `PATCH /me/notifications` |
-| **Frames Figma** | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| **Frames Figma** | **F1.3:** [Edit/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3003) · [Edit/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=106-7000) · **F1.4:** [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3138) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=106-7324) · **F1.5:** [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3257) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=106-7698) |
 | **Specs de tela** | `telasFigma/telas1/F1.3-perfil.md` · `F1.4-perfil-seguranca.md` · `F1.5-perfil-notificacoes.md` |
 
 ---
@@ -177,3 +177,6 @@ Então os switches para canais CRITICAL estão bloqueados (disabled) e não pode
 | Specs de tela | `telasFigma/telas1/F1.3-perfil.md`, `F1.4-perfil-seguranca.md`, `F1.5-perfil-notificacoes.md` |
 | Fluxo aluno | `foundationDocs/analysis/fluxos_por_perfil.md` §2 F1.10 |
 | Página Figma F1 | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| Frame F1.3 principal | [F1.3 — Perfil / Edit / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3003) |
+| Frame F1.4 principal | [F1.4 — Segurança / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3138) |
+| Frame F1.5 principal | [F1.5 — Notificações / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=88-3257) |

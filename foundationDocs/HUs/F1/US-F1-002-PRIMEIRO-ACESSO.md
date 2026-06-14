@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `auth.first_access` |
 | **API primária** | `POST /auth/first-access` |
-| **Frames Figma** | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| **Frames Figma** | [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=58-1235) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=140-12715) |
 | **Spec de tela** | `telasFigma/telas1/F1.2-primeiro-acesso.md` |
 | **Pré-condição** | Usuário logado com `mustChangePassword = true` (US-F0-001 CA-02) |
 
@@ -192,3 +192,4 @@ Content-Type: application/json
 | Fluxo aluno | `foundationDocs/analysis/fluxos_por_perfil.md` §2 F1.1 |
 | História de origem | [US-F0-001](../F0/US-F0-001-LOGIN.md) — Login (mustChangePassword) |
 | Página Figma F1 | [Telas / F1 — Aluno](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=48-339) |
+| Frame principal | [F1.2 — Primeiro acesso / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=58-1235) |

@@ -9,7 +9,7 @@
 | **Plataforma** | Web + Mobile |
 | **Capability** | `alumni.view_own` |
 | **API primária** | `GET /alumni/me` |
-| **Frames Figma** | [Telas / F2 — Egresso](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=132-18387) |
+| **Frames Figma** | [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13644) · [Skeleton/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13997) · [Empty/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-14115) · [Default/Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=298-14168) |
 | **Spec de tela** | `telasFigma/telas2/F2.1-egresso-inicio.md` |
 | **Origem** | Nova — preenche o vácuo da Árvore 5 do legado (egresso ficava sem UI) |
 | **Pré-condição** | Secretaria executou F5.11 (registrar diploma) → `usuario.role = EGRESSO`, capabilities de aluno revogadas |
@@ -228,3 +228,4 @@ Authorization: Bearer {accessToken}
 | Verificação pública | [US-F0-007](../F0/US-F0-007-VERIFICAR-CERTIFICADO.md) |
 | Análise arquitetural §11 | `foundationDocs/analysis/analise_arquitetural_secretariaonline2.md` §11 |
 | Página Figma F2 | [Telas / F2 — Egresso](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=132-18387) |
+| Frame principal | [F2.1 — Dashboard Egresso / Default / Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13644) |

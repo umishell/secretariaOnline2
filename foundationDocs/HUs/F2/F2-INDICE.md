@@ -48,9 +48,22 @@ O egresso acessa diretamente as mesmas rotas de outras fases, com as mesmas capa
 
 ## Histórias desta fase
 
-| ID | Épico | Telas | Título curto | Prioridade | Arquivo |
-|----|-------|-------|-------------|------------|---------|
-| US-F2-001 | EGRESSO-DASH | F2.1 | Dashboard do egresso e reemissão de certificados | P2 | [US-F2-001-DASHBOARD-EGRESSO.md](./US-F2-001-DASHBOARD-EGRESSO.md) |
+| ID | Épico | Telas | Título curto | Prioridade | Frames Figma | Arquivo |
+|----|-------|-------|-------------|------------|--------------|---------|
+| US-F2-001 | EGRESSO-DASH | F2.1 | Dashboard do egresso e reemissão de certificados | P2 | [Default/Desktop](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13644) · [Skeleton](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13997) · [Empty](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-14115) · [Mobile](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=298-14168) | [US-F2-001-DASHBOARD-EGRESSO.md](./US-F2-001-DASHBOARD-EGRESSO.md) |
+
+---
+
+## Mapa de frames Figma (F2)
+
+Página: [Telas / F2 — Egresso](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=132-18387)
+
+| Tela | Frame | Variante | Plataforma | Node |
+|------|-------|----------|------------|------|
+| F2.1 | Dashboard Egresso | Default | Desktop | [166-13644](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13644) |
+| F2.1 | Dashboard Egresso | Skeleton | Desktop | [166-13997](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-13997) |
+| F2.1 | Dashboard Egresso | Empty | Desktop | [166-14115](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=166-14115) |
+| F2.1 | Dashboard Egresso | Default | Mobile | [298-14168](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=298-14168) |
 
 ---
 
@@ -61,5 +74,5 @@ O egresso acessa diretamente as mesmas rotas de outras fases, com as mesmas capa
 | Spec de tela | `telasFigma/telas2/F2.1-egresso-inicio.md` |
 | Fluxo do egresso | `foundationDocs/analysis/fluxos_por_perfil.md` §3 |
 | Mapa de rotas | `foundationDocs/analysis/telas.md` §4 |
-| Frames Figma | [Telas / F2 — Egresso](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=132-18387) |
+| Página Figma F2 | [Telas / F2 — Egresso](https://www.figma.com/design/y1ZC44ThrXH0CIpEWZITh6/secretariaOnline2?node-id=132-18387) |
 | Trigger de transição | Coberto em F5.11 (registrar diploma — fase secretaria) |
