@@ -38,9 +38,15 @@ Criar no Figma **as 2 telas do fluxo F8** (busca global e suporte), como frames 
 
 ## Componentes DS
 
-- **DS/CommandPalette** — F8.1 (criar se não existir no DS)
-- **DS/Accordion** — F8.2
-- **DS/Input/Search** — trigger no Topbar (referência cruzada AppLayout)
+- **DS/CommandPalette** — F8.1 (`componentKey` `f8bb6966942465200dbe82db51a4eca9d34f8687` · `empty|loading|results`)
+- **DS/SearchResultGroup** — F8.1 Results (`92bb58bf39cc1967b16d47a68ca46a00f0392168`)
+- **DS/SearchResultItem** — F8.1 typed (`59eda2a45ccc429efd6b9366d882b6dfed7af3bf` · `aluno|protocolo|evento`)
+- **DS/Accordion** — F8.2 (`56826fc223f08346da02bda76b5a86d13d62dc95` · `open|closed`)
+- **DS/Input/Search** — trigger no Topbar (`7149fcd5ff6d507f1534d54889f915c9383deeba`)
+
+**Library:** `designSystem v2` · `search_design_system` com `fileKey=gF97YuhDuYr5Sy9wagZLoJ` (ou `includeLibraryKeys` no arquivo telas).
+
+**Scripts pós-publish:** `telasFigma/scripts/sync-f8-ds-instances.js` → `populate-f8-results.js` → `setup-f8-prototype.js`
 
 ## Regras imutáveis
 
