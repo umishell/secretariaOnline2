@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Gradle (Kotlin/Spring backend)
+.gradle/
+
+# IDE
+.idea/
+
+# JVM
+*.class
+
+# Secrets
+.env
+.env.*
+
+# Diagram export artefacts & local tooling
+foundationDocs/sequenceDiagrams/exports/
+foundationDocs/sequenceDiagrams/scripts/

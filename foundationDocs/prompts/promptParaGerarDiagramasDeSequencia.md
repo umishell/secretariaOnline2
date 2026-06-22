@@ -53,7 +53,7 @@ ANTES DE DESENHAR:
 2. Leia §2 (camada fixa) + §3 (camada da HU alvo).
 3. Siga `.cursor/skills/fullstack-sequence-diagrams/` (SKILL.md → reference.md → examples.md).
 4. Um diagrama = um resultado. Máx. ~7 participantes e ~15 mensagens.
-5. Layout: `participant`, sem `Note over`, sem `%%{init}%%`, sem `<br/>` em labels (single-line ≤58 chars), self-call espaçador se 1ª seta WebApp→API (SKILL.md §Wrap).
+5. Layout: `participant`, sem `Note over`, sem `%%{init}%%`, sem `<br/>`; labels **completos** (wrap via `mermaid-live-config.json`); self-call espaçador se 1ª seta WebApp→API (SKILL.md §Wrap).
 
 CONTEXTO:
 - HU alvo: @foundationDocs/HUs/<Fase>/US-Fx-NNN-*.md
@@ -89,8 +89,12 @@ ENTREGÁVEL (por diagrama):
 ```mermaid
 sequenceDiagram
   autonumber
+  box #e8f4fc Cliente
   ...
+  box #fff8ee Servidor
 ```
+
+(Config: `sequenceDiagrams/mermaid-live-config.json` na aba Config do mermaid.live)
 
 **Notas:** 2–3 bullets
 **Lacunas:** … ou nenhuma
@@ -496,7 +500,7 @@ Cada execução do modo fila deve produzir o **mesmo artefato** que §7.1: mesmo
 
 **Cobertura:** matriz completa · CAs SEQUENCIA/ERRO cobertos · DRY linkados · NAO_APLICAVEL listado · sub-fluxos `fluxos` §fase
 
-**Qualidade:** camadas · setas rotuladas · tabelas JPA · ≤15 msgs · erros separados · `autonumber` · lacunas · layout (`participant`, single-line ≤58 chars, sem `<br/>`/`%%{init}%%`, sem `Note over`)
+**Qualidade:** camadas · setas rotuladas · tabelas JPA · ≤15 msgs · erros separados · `autonumber` · lacunas · um bloco mermaid (`box #hex`, config em mermaid-live-config.json) · layout (`participant`, labels completos, sem padding invisível nos labels, sem `<br/>`/`%%{init}%%`, sem `Note over`)
 
 **Persistência:** arquivo em `sequenceDiagrams/<Fase>/` · README atualizado · transversais não duplicados
 
