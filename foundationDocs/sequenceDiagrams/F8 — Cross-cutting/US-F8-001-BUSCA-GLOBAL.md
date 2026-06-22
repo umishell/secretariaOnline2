@@ -66,13 +66,13 @@ sequenceDiagram
         SearchUseCase->>Postgres: SELECT alunos ILIKE %joão% LIMIT 5 (pg_trgm)
         Postgres-->>SearchUseCase: [alunos: 3 resultados]
     and
-        SearchUseCase->>Postgres: SELECT requests ILIKE %joão% LIMIT 5 (filtrado por capa…
+        SearchUseCase->>Postgres: SELECT requests ILIKE %joão% LIMIT 5 (filtrado por capabilities)
         Postgres-->>SearchUseCase: [solicitacoes: 2 resultados]
     and
         SearchUseCase->>Postgres: SELECT eventos ILIKE %joão% LIMIT 5 (pg_trgm)
         Postgres-->>SearchUseCase: [eventos: 1 resultado]
     and
-        SearchUseCase->>Postgres: SELECT users ILIKE %joão% LIMIT 5 (apenas se user.manag…
+        SearchUseCase->>Postgres: SELECT users ILIKE %joão% LIMIT 5 (apenas se user.manage_all)
         Postgres-->>SearchUseCase: [usuarios: 0 resultados]
     end
     SearchUseCase-->>SearchController: SearchResultDto (capability-scoped)
@@ -105,13 +105,13 @@ sequenceDiagram
 
     WebApp->>WebApp: monta contexto da tela
     WebApp->>SearchController: GET /search?q=João&limit=5 (Bearer)
-    SearchController->>SearchUseCase: search("João", student.view_own + request.view_own + ev…
+    SearchController->>SearchUseCase: search("João", student.view_own + request.view_own + event.view)
     SearchUseCase->>SearchUseCase: sem user.manage_all → omite índice users
     par fan-out 3 índices (users omitido)
-        SearchUseCase->>Postgres: SELECT alunos WHERE grr=:userGrr AND nome ILIKE %João% …
+        SearchUseCase->>Postgres: SELECT alunos WHERE grr=:userGrr AND nome ILIKE %João% LIMIT 5
         Postgres-->>SearchUseCase: [aluno próprio ou vazio]
     and
-        SearchUseCase->>Postgres: SELECT requests WHERE student_id=:id ILIKE %João% LIMIT…
+        SearchUseCase->>Postgres: SELECT requests WHERE student_id=:id AND protocolo ILIKE %João% LIMIT 5
         Postgres-->>SearchUseCase: [solicitacoes do próprio aluno]
     and
         SearchUseCase->>Postgres: SELECT eventos ILIKE %João% LIMIT 5 (event.view)

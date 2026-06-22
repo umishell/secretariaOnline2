@@ -65,13 +65,13 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Acessa /admin/audit-log
-    WebApp->>AuditController: GET /audit-log?de=<-1 year>&ate=today&page=0&size=50 (B…
+    WebApp->>AuditController: GET /audit-log?de=<-1 year>&ate=today&page=0&size=50 (Bearer, audit.read ✓)
     AuditController->>ListAuditLogUC: execute(AuditQuery{ator, acao, entidade, de, ate, page})
-    ListAuditLogUC->>Postgres: SELECT audit_log BY filtros ORDER BY timestamp DESC LIM…
+    ListAuditLogUC->>Postgres: SELECT audit_log BY filtros ORDER BY timestamp DESC LIMIT 50 OFFSET 0
     Postgres-->>ListAuditLogUC: Page<AuditLogEntity> {payloadAntes, payloadDepois per row}
     ListAuditLogUC-->>AuditController: Page<AuditLogDto>
     AuditController-->>WebApp: 200 {…}
-    WebApp-->>Admin: DS/DataTable somente leitura; clique na linha → DS/Draw…
+    WebApp-->>Admin: DS/DataTable somente leitura; clique na linha → DS/Drawer + DS/AuditDiffViewer
 ```
 
 **Notas:**

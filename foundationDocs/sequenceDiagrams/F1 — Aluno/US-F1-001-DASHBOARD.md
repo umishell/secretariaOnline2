@@ -60,11 +60,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant Redis
@@ -83,7 +83,7 @@ sequenceDiagram
     DashboardBFF->>Redis: SET dashboard:{alunoId} TTL=30s
     DashboardBFF-->>WebApp: 200 {…}
     WebApp->>WebApp: useActions(_links) → QuickTiles + CTAs condicionais
-    WebApp-->>Aluno: dashboard completo (KpiRow, Pendências, Tabela, Eventos…
+    WebApp-->>Aluno: dashboard completo (KpiRow, Pendências, Tabela, Eventos, QuickTiles)
 ```
 
 **Notas:**
@@ -104,11 +104,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant Redis
@@ -141,11 +141,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant SolicitacoesQuery
@@ -161,8 +161,8 @@ sequenceDiagram
     SolicitacoesQuery-->>DashboardBFF: timeout / erro interno
     FormativasQuery-->>DashboardBFF: dados OK
     DashboardBFF-->>WebApp: 200 {…}
-    WebApp->>WebApp: useActions(_links) + marca bloco solicitacoes como degr…
-    WebApp-->>Aluno: dashboard parcial + DS/AlertBanner warning na seção Sol…
+    WebApp->>WebApp: useActions(_links) + marca bloco solicitacoes como degradado
+    WebApp-->>Aluno: dashboard parcial + DS/AlertBanner warning na seção Solicitações
 ```
 
 **Notas:**
@@ -183,12 +183,12 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant MobileApp
         participant TanStackQuery
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant DashboardBFF
         participant Redis
         participant Postgres

@@ -70,23 +70,23 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CourseController
         participant Postgres
     end
 
-    Secretaria->>WebApp: clica "Novo" + preenche formulário (nome, sigla, coorde…
-    WebApp->>JwtFilter: POST /secretaria/cursos {nome, sigla, coordenadorId, ho…
+    Secretaria->>WebApp: clica "Novo" + preenche formulário (nome, sigla, coordenadorId, horasMinimas)
+    WebApp->>JwtFilter: POST /secretaria/cursos {nome, sigla, coordenadorId, horasMinimas, secretariosIds[]}
     JwtFilter->>CourseController: repassa (secretariaId, course.manage ✓)
     CourseController->>Postgres: BEGIN TX
-    CourseController->>Postgres: INSERT curso(nome, sigla, coordenadorId, horasMinimas, …
-    CourseController->>Postgres: INSERT curso_secretario(cursoId, usuarioId) para cada s…
-    CourseController->>Postgres: INSERT audit_log(course.create, operadorId=secretariaId…
+    CourseController->>Postgres: INSERT curso(nome, sigla, coordenadorId, horasMinimas, ativo=true)
+    CourseController->>Postgres: INSERT curso_secretario(cursoId, usuarioId) para cada secretarioId
+    CourseController->>Postgres: INSERT audit_log(course.create, operadorId=secretariaId, cursoId)
     CourseController->>Postgres: COMMIT
     CourseController-->>WebApp: 201 {id, sigla, nome, _links}
     WebApp-->>Secretaria: linha adicionada na tabela (invalidateQueries[cursos])
@@ -110,22 +110,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant SubjectController
         participant Postgres
     end
 
-    Secretaria->>WebApp: clica "Novo" + preenche formulário (nome, codigo, curso…
-    WebApp->>JwtFilter: POST /secretaria/disciplinas {nome, codigo, cursoId, pe…
+    Secretaria->>WebApp: clica "Novo" + preenche formulário (nome, codigo, cursoId, periodo, ch)
+    WebApp->>JwtFilter: POST /secretaria/disciplinas {nome, codigo, cursoId, periodo, ch}
     JwtFilter->>SubjectController: repassa (secretariaId, subject.manage ✓)
     SubjectController->>Postgres: BEGIN TX
-    SubjectController->>Postgres: INSERT disciplina(nome, codigo, cursoId, periodo, ch, a…
-    SubjectController->>Postgres: INSERT audit_log(subject.create, operadorId=secretariaI…
+    SubjectController->>Postgres: INSERT disciplina(nome, codigo, cursoId, periodo, ch, ativa=true)
+    SubjectController->>Postgres: INSERT audit_log(subject.create, operadorId=secretariaId, disciplinaId)
     SubjectController->>Postgres: COMMIT
     SubjectController-->>WebApp: 201 {id, codigo, nome, ativa: true, _links}
     WebApp-->>Secretaria: disciplina na tabela com badge "Ativa"
@@ -148,11 +148,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant SubjectController
         participant Postgres
@@ -163,7 +163,7 @@ sequenceDiagram
     JwtFilter->>SubjectController: repassa (secretariaId, subject.manage ✓)
     SubjectController->>Postgres: BEGIN TX
     SubjectController->>Postgres: UPDATE disciplina SET ativa=false WHERE id={id}
-    SubjectController->>Postgres: INSERT audit_log(subject.deactivate, operadorId=secreta…
+    SubjectController->>Postgres: INSERT audit_log(subject.deactivate, operadorId=secretariaId, disciplinaId)
     SubjectController->>Postgres: COMMIT
     SubjectController-->>WebApp: 200 {disciplina, ativa: false, _links}
     WebApp-->>Secretaria: badge "Inativa" na linha (alunos matriculados inalterados)
@@ -187,18 +187,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant SubjectController
         participant Postgres
     end
 
     Secretaria->>WebApp: clica "Exportar" na barra de ações
-    WebApp->>JwtFilter: GET /secretaria/disciplinas?format=csv (Bearer, subject…
+    WebApp->>JwtFilter: GET /secretaria/disciplinas?format=csv (Bearer, subject.manage ✓)
     JwtFilter->>SubjectController: repassa (secretariaId, subject.manage ✓)
     SubjectController->>Postgres: SELECT disciplinas WHERE cursoId IN cursoIds[] (sem limit)
     Postgres-->>SubjectController: rows completas (nome, codigo, curso, periodo, ch, ativa)
@@ -223,27 +223,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CalendarController
         participant Postgres
     end
 
-    Secretaria->>WebApp: preenche modal (nome=2025/2, cursoId, inicio=01/08/2025…
-    WebApp->>JwtFilter: POST /calendars/periods {nome, cursoId, inicio, fim} (B…
+    Secretaria->>WebApp: preenche modal (nome=2025/2, cursoId, inicio=01/08/2025, fim=30/11/2025)
+    WebApp->>JwtFilter: POST /calendars/periods {nome, cursoId, inicio, fim} (Bearer)
     JwtFilter->>CalendarController: repassa (secretariaId, calendar.manage ✓)
-    CalendarController->>Postgres: SELECT id FROM academic_period WHERE cursoId=... AND in…
+    CalendarController->>Postgres: SELECT id FROM academic_period WHERE cursoId=... AND intervalo sobrepõe
     Postgres-->>CalendarController: nenhuma linha (sem sobreposição)
     CalendarController->>Postgres: BEGIN TX
-    CalendarController->>Postgres: INSERT academic_period(nome, cursoId, inicio, fim, ativ…
-    CalendarController->>Postgres: INSERT audit_log(calendar.period_create, operadorId=sec…
+    CalendarController->>Postgres: INSERT academic_period(nome, cursoId, inicio, fim, ativo=true)
+    CalendarController->>Postgres: INSERT audit_log(calendar.period_create, operadorId=secretariaId)
     CalendarController->>Postgres: COMMIT
     CalendarController-->>WebApp: 201 {id, nome, inicio, fim, _links}
-    WebApp-->>Secretaria: período adicionado na visualização mensal (invalidateQu…
+    WebApp-->>Secretaria: período adicionado na visualização mensal (invalidateQueries[calendars])
 ```
 
 **Notas:**
@@ -264,22 +264,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CalendarController
         participant Postgres
     end
 
-    Secretaria->>WebApp: preenche modal (data=15/11/2025, titulo, tipo=COLACAO, …
-    WebApp->>JwtFilter: POST /calendars/events {data, titulo, tipo=COLACAO, cur…
+    Secretaria->>WebApp: preenche modal (data=15/11/2025, titulo, tipo=COLACAO, cursoId)
+    WebApp->>JwtFilter: POST /calendars/events {data, titulo, tipo=COLACAO, cursoId}
     JwtFilter->>CalendarController: repassa (secretariaId, calendar.manage ✓)
     CalendarController->>Postgres: BEGIN TX
     CalendarController->>Postgres: INSERT calendar_event(data, titulo, tipo=COLACAO, cursoId)
-    CalendarController->>Postgres: INSERT audit_log(calendar.event_create, operadorId=secr…
+    CalendarController->>Postgres: INSERT audit_log(calendar.event_create, operadorId=secretariaId)
     CalendarController->>Postgres: COMMIT
     CalendarController-->>WebApp: 201 {id, data, titulo, tipo=COLACAO, cor=purple, _links}
     WebApp-->>Secretaria: evento no dia 15/11 com cor semântica roxa
@@ -303,11 +303,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CourseController
         participant Postgres
@@ -339,22 +339,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CalendarController
         participant Postgres
     end
 
     Secretaria->>WebApp: cria período 2025/3 (01/10/2025–28/02/2026) para TADS
-    WebApp->>JwtFilter: POST /calendars/periods {cursoId=TADS, inicio=01/10, fi…
+    WebApp->>JwtFilter: POST /calendars/periods {cursoId=TADS, inicio=01/10, fim=28/02/2026}
     JwtFilter->>CalendarController: repassa (secretariaId, calendar.manage ✓)
-    CalendarController->>Postgres: SELECT id, nome FROM academic_period WHERE cursoId=TADS…
+    CalendarController->>Postgres: SELECT id, nome FROM academic_period WHERE cursoId=TADS AND sobrepõe intervalo
     Postgres-->>CalendarController: [{id, nome: "2025/2"}] — sobreposição detectada
-    CalendarController-->>WebApp: 422 Problem Details (period_overlap — conflictsWithNome…
+    CalendarController-->>WebApp: 422 Problem Details (period_overlap — conflictsWithNome: "2025/2")
     WebApp-->>Secretaria: DS/AlertBanner "Período sobrepõe 2025/2"
 ```
 

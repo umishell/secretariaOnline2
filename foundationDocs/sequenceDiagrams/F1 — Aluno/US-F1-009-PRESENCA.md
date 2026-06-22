@@ -54,11 +54,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventsController
         participant Postgres
@@ -68,10 +68,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /events?audience=me (Bearer)
     JwtFilter->>JwtFilter: valida JWT + attendance.view_open ✓
     JwtFilter->>EventsController: repassa (alunoId)
-    EventsController->>Postgres: SELECT event JOIN audience JOIN attendance_record (situ…
-    Postgres-->>EventsController: [{id, titulo, periodo, estado, organizador, cargaHorari…
+    EventsController->>Postgres: SELECT event JOIN audience JOIN attendance_record (situacaoPresenca por aluno) ORDER BY scheduledStart ASC
+    Postgres-->>EventsController: [{id, titulo, periodo, estado, organizador, cargaHoraria, situacaoPresenca, janelaAtiva?}]
     EventsController-->>WebApp: 200 {events: [...]}
-    WebApp-->>Aluno: tabela (Título, Período, Estado DS/Badge, Organizador, …
+    WebApp-->>Aluno: tabela (Título, Período, Estado DS/Badge, Organizador, Carga h, Situação presença)
 ```
 
 **Notas:**
@@ -92,11 +92,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant AttendanceController
         participant Postgres
@@ -106,11 +106,11 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /events/{id}/attendance/session (Bearer)
     JwtFilter->>JwtFilter: valida JWT + attendance.view_open ✓
     JwtFilter->>AttendanceController: repassa (alunoId, eventId)
-    AttendanceController->>Postgres: SELECT event JOIN attendance_session (janela ativa?) JO…
-    Postgres-->>AttendanceController: {event, attendanceMode, situacaoAluno, janelaExpira ?: …
+    AttendanceController->>Postgres: SELECT event JOIN attendance_session (janela ativa?) JOIN attendance_window WHERE eventId=:id
+    Postgres-->>AttendanceController: {event, attendanceMode, situacaoAluno, janelaExpira ?: null, _links.confirmar-presenca?}
     AttendanceController-->>WebApp: 200 {…}
-    WebApp->>WebApp: useActions(_links) → AttendanceWidget visível se _links…
-    WebApp-->>Aluno: modal (desc. + AttendanceWidget c/ countdown se janela …
+    WebApp->>WebApp: useActions(_links) → AttendanceWidget visível se _links.confirmar-presenca presente
+    WebApp-->>Aluno: modal (desc. + AttendanceWidget c/ countdown se janela ativa)
 ```
 
 **Notas:**
@@ -132,27 +132,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant AttendanceController
         participant ConfirmAttendanceUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: informa PIN + clica "Confirmar" (deviceUuid gerado clie…
-    WebApp->>JwtFilter: POST /events/{id}/attendance/confirm {pin, deviceUuid, …
+    Aluno->>WebApp: informa PIN + clica "Confirmar" (deviceUuid gerado client-side ✓)
+    WebApp->>JwtFilter: POST /events/{id}/attendance/confirm {pin, deviceUuid, fase?: ENTRADA|SAIDA} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + attendance.check_in ✓
     JwtFilter->>AttendanceController: repassa (alunoId, eventId, pin, deviceUuid, fase)
     AttendanceController->>ConfirmAttendanceUseCase: execute(cmd)
-    ConfirmAttendanceUseCase->>Postgres: SELECT janela_ativa + pin_hash + devicePolicy WHERE eve…
-    Postgres-->>ConfirmAttendanceUseCase: {attendanceMode: SECRET_SINGLE, pin_hash, devicePolicy:…
-    ConfirmAttendanceUseCase->>Postgres: BEGIN; INSERT attendance_record {alunoId, eventId, devi…
+    ConfirmAttendanceUseCase->>Postgres: SELECT janela_ativa + pin_hash + devicePolicy WHERE eventId=:id AND now() WITHIN janela
+    Postgres-->>ConfirmAttendanceUseCase: {attendanceMode: SECRET_SINGLE, pin_hash, devicePolicy: BIND|NONE}
+    ConfirmAttendanceUseCase->>Postgres: BEGIN; INSERT attendance_record {alunoId, eventId, deviceUuid, fase, pin_ok=true} + INSERT outbox_event + COMMIT
     AttendanceController-->>WebApp: 200 OK {situacaoAluno: COMPLETA, _links}
-    WebApp-->>Aluno: DS/AlertBanner success "Presença registrada!" + badge "…
+    WebApp-->>Aluno: DS/AlertBanner success "Presença registrada!" + badge "Presença completa" na lista)
 ```
 
 **Notas:**
@@ -175,11 +175,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant AttendanceController
         participant ConfirmAttendanceUseCase
@@ -187,15 +187,15 @@ sequenceDiagram
     end
 
     Aluno->>WebApp: informa PIN de entrada + "Registrar Entrada"
-    WebApp->>JwtFilter: POST /events/{id}/attendance/confirm {pin, deviceUuid, …
+    WebApp->>JwtFilter: POST /events/{id}/attendance/confirm {pin, deviceUuid, fase?: ENTRADA|SAIDA} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + attendance.check_in ✓
     JwtFilter->>AttendanceController: repassa (alunoId, eventId, pin, deviceUuid, fase: ENTRADA)
     AttendanceController->>ConfirmAttendanceUseCase: execute(cmd)
-    ConfirmAttendanceUseCase->>Postgres: SELECT janela_ENTRADA ativa + pin_entrada_hash + attend…
-    Postgres-->>ConfirmAttendanceUseCase: {attendanceMode: SECRET_DUAL, pin_hash, entrada_existen…
-    ConfirmAttendanceUseCase->>Postgres: BEGIN; INSERT attendance_record {alunoId, eventId, devi…
+    ConfirmAttendanceUseCase->>Postgres: SELECT janela_ENTRADA ativa + pin_entrada_hash + attendanceMode
+    Postgres-->>ConfirmAttendanceUseCase: {attendanceMode: SECRET_DUAL, pin_hash, entrada_existente: null}
+    ConfirmAttendanceUseCase->>Postgres: BEGIN; INSERT attendance_record {alunoId, eventId, deviceUuid, fase, pin_ok=true} + INSERT outbox_event + COMMIT
     AttendanceController-->>WebApp: 200 OK {situacaoAluno: PARCIAL, _links.confirmar-saida}
-    WebApp-->>Aluno: "Entrada registrada. Confirme a saída quando solicitado…
+    WebApp-->>Aluno: "Entrada registrada. Confirme a saída quando solicitado pelo organizador."
 ```
 
 **Notas:**
@@ -218,27 +218,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant AttendanceController
         participant ConfirmAttendanceUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: informa PIN/token + "Confirmar" (countdown zerado ou ac…
-    WebApp->>JwtFilter: POST /events/{id}/attendance/confirm {pin, deviceUuid, …
+    Aluno->>WebApp: informa PIN/token + "Confirmar" (countdown zerado ou acesso tardio)
+    WebApp->>JwtFilter: POST /events/{id}/attendance/confirm {pin, deviceUuid, fase?: ENTRADA|SAIDA} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + attendance.check_in ✓
     JwtFilter->>AttendanceController: repassa request
     AttendanceController->>ConfirmAttendanceUseCase: execute(cmd)
-    ConfirmAttendanceUseCase->>Postgres: SELECT janela_ativa WHERE eventId=:id AND now() WITHIN …
+    ConfirmAttendanceUseCase->>Postgres: SELECT janela_ativa WHERE eventId=:id AND now() WITHIN (janela_inicio, janela_fim)
     Postgres-->>ConfirmAttendanceUseCase: [] (nenhuma janela ativa no momento)
     ConfirmAttendanceUseCase-->>AttendanceController: erro WindowClosedException
     AttendanceController-->>WebApp: 403 {…}
-    WebApp-->>Aluno: DS/EmptyState "A janela de validação encerrou." + Atten…
+    WebApp-->>Aluno: DS/EmptyState "A janela de validação encerrou." + AttendanceWidget disabled)
 ```
 
 **Notas:**

@@ -52,11 +52,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipController
         participant Postgres
@@ -66,7 +66,7 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /internships?canReview=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + internship.review ✓
     JwtFilter->>InternshipController: repassa (professorId)
-    InternshipController->>Postgres: SELECT internships WHERE orientadorId=professorId OR co…
+    InternshipController->>Postgres: SELECT internships WHERE orientadorId=professorId OR coeVinculo=professorId
     Postgres-->>InternshipController: Page{aluno, empresa, documentoPendente, estado}
     InternshipController-->>WebApp: 200 Page{items, _links}
     WebApp-->>Professor: DS/DataTable (Aluno, Empresa, Documento pendente)
@@ -89,11 +89,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipController
         participant ReviewDocUC as ReviewDocumentUseCase
@@ -101,18 +101,18 @@ sequenceDiagram
     end
 
     Professor->>WebApp: preenche parecer + seleciona "Aprovado" (_links.revisar ✓)
-    WebApp->>JwtFilter: POST /internships/{id}/documents/{docId}/review {decisa…
+    WebApp->>JwtFilter: POST /internships/{id}/documents/{docId}/review {decisao: APROVADO, parecer} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + internship.review ✓
     JwtFilter->>InternshipController: repassa (professorId)
-    InternshipController->>ReviewDocUC: execute(internshipId, docId, APROVADO, parecer, profess…
+    InternshipController->>ReviewDocUC: execute(internshipId, docId, APROVADO, parecer, professorId)
     ReviewDocUC->>Postgres: BEGIN TX
     ReviewDocUC->>Postgres: UPDATE internship_document SET estado=APROVADO
-    ReviewDocUC->>Postgres: INSERT internship_event (PARECER_EMITIDO, decisao, pare…
-    ReviewDocUC->>Postgres: INSERT outbox_event (type=estagios.document_reviewed, {…
+    ReviewDocUC->>Postgres: INSERT internship_event (PARECER_EMITIDO, decisao, parecer, actor_id)
+    ReviewDocUC->>Postgres: INSERT outbox_event (type=estagios.document_reviewed, {internshipId, docId})
     ReviewDocUC->>Postgres: COMMIT
     ReviewDocUC-->>InternshipController: InternshipDocumentDto (APROVADO)
     InternshipController-->>WebApp: 200 {documento, estado: APROVADO, _links: [arquivar?]}
-    WebApp-->>Professor: documento atualizado + botão "Arquivar estágio" se todo…
+    WebApp-->>Professor: documento atualizado + botão "Arquivar estágio" se todos docs aprovados
 ```
 
 **Notas:**
@@ -133,11 +133,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipController
         participant CloseInternshipUC as CloseInternshipUseCase
@@ -152,11 +152,11 @@ sequenceDiagram
     CloseInternshipUC->>Postgres: BEGIN TX
     CloseInternshipUC->>Postgres: UPDATE internship SET estado=CONCLUIDO, closedAt=now()
     CloseInternshipUC->>Postgres: INSERT internship_event (ARQUIVADO, actor_id)
-    CloseInternshipUC->>Postgres: INSERT outbox_event (type=estagios.closed, {internshipI…
+    CloseInternshipUC->>Postgres: INSERT outbox_event (type=estagios.closed, {internshipId, alunoId})
     CloseInternshipUC->>Postgres: COMMIT
     CloseInternshipUC-->>InternshipController: InternshipDto (CONCLUIDO)
     InternshipController-->>WebApp: 200 {estado: CONCLUIDO, _links: []}
-    WebApp-->>Professor: toast "Estágio arquivado." + item removido da fila de r…
+    WebApp-->>Professor: toast "Estágio arquivado." + item removido da fila de revisão
 ```
 
 **Notas:**
@@ -177,11 +177,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipController
     end
@@ -189,8 +189,8 @@ sequenceDiagram
     Professor->>WebApp: acessa /estagios?to=me (sem internship.review)
     WebApp->>JwtFilter: GET /internships?canReview=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + internship.review ✗ (authority ausente)
-    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: internshi…
-    WebApp-->>Professor: redirecionamento para /inicio (menu não exibido para nã…
+    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: internship.review)
+    WebApp-->>Professor: redirecionamento para /inicio (menu não exibido para não-orientador)
 ```
 
 **Notas:**

@@ -6,14 +6,37 @@
 
 | Prioridade | Técnica | Exemplo |
 |:----------:|---------|---------|
-| 1 | Label single-line ≤ ~58 chars | `GET /search?q=João (Bearer)` |
-| 2 | Abreviar payload | `200 {…}` + detalhe em Notas |
+| 1 | Labels **completos** (wrap no live editor) | `repassa (secretariaId, cursoIds[], dashboard.view_secretary ✓)` |
+| 2 | Abreviar só JSON volumoso | `200 {…}` + detalhe em Notas |
 | 3 | Self-call espaçador | `WebApp->>WebApp: monta contexto da tela` |
 | 4 | Notas markdown | SQL completo, RFC 7807 |
 
-Nunca `\n`. Nunca `<br/>` em labels de mensagem. Nunca `%%{init}%%` em docs SO2.
+Nunca `\n`. Nunca `<br/>` em labels. Nunca `%%{init}%%` inline. **Nunca** truncar com `…` no meio da palavra (ex.: `secre…`).
 
-## Mermaid skeleton (full-featured — docs/GitHub)
+## Diagramas SO2 (`sequenceDiagrams/`)
+
+Config global: [`mermaid-live-config.json`](../mermaid-live-config.json) → aba **Config** do [mermaid.live](https://mermaid.live). Cada diagrama = **um** bloco abaixo (sem `%%{init}%%` inline).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    box #e8f4fc Cliente
+        participant WebApp
+    end
+    box #fff8ee Servidor
+        participant API
+    end
+    WebApp->>API: GET /path (Bearer)
+```
+
+| Regra | Valor |
+|-------|--------|
+| Box Cliente | `box #e8f4fc Cliente` |
+| Box Servidor | `box #fff8ee Servidor` |
+| Labels | completos nas setas; sem padding invisível nos `.md` |
+| Export PNG | `mermaid-live-config.json` + `mermaid-export.css`; padding lateral simétrico só no `.mmd` de export (`\u00a0`×6) |
+
+## Mermaid skeleton (referência)
 
 ```mermaid
 sequenceDiagram

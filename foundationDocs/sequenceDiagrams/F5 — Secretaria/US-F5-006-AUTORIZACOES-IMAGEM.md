@@ -58,11 +58,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
@@ -70,14 +70,14 @@ sequenceDiagram
     end
 
     Secretaria->>WebApp: acessa /secretaria/autorizacoes-imagem
-    WebApp->>JwtFilter: GET /requests?type=AUTORIZACAO_IMAGEM&estado=ABERTA&pag…
-    JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], image_authorization.…
-    RequestController->>Postgres: SELECT requests JOIN dados WHERE type=AUTORIZACAO_IMAGE…
+    WebApp->>JwtFilter: GET /requests?type=AUTORIZACAO_IMAGEM&estado=ABERTA&page=0&size=50
+    JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], image_authorization.review ✓)
+    RequestController->>Postgres: SELECT requests JOIN dados WHERE type=AUTORIZACAO_IMAGEM AND estado=ABERTA
     Postgres-->>RequestController: {content[], foto_storage_key por item, totalElements}
-    RequestController->>MinIO: GET presigned URLs[] para foto_storage_keys × N itens (…
+    RequestController->>MinIO: GET presigned URLs[] para foto_storage_keys × N itens (TTL=15min)
     MinIO-->>RequestController: {storage_key → presigned_url} map
     RequestController-->>WebApp: 200 {…}
-    WebApp-->>Secretaria: DataTable compacta (thumbnail 48px + dados + checkboxes…
+    WebApp-->>Secretaria: DataTable compacta (thumbnail 48px + dados + checkboxes HATEOAS)
 ```
 
 **Notas:**
@@ -98,28 +98,28 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
-    Secretaria->>WebApp: seleciona N linhas + clica "Aprovar lote" + confirma di…
-    WebApp->>JwtFilter: PATCH /requests/bulk-deliberate {ids[N], decisao=DEFERI…
+    Secretaria->>WebApp: seleciona N linhas + clica "Aprovar lote" + confirma dialog
+    WebApp->>JwtFilter: PATCH /requests/bulk-deliberate {ids[N], decisao=DEFERIDA}
     JwtFilter->>RequestController: repassa (secretariaId, image_authorization.review ✓)
-    RequestController->>Postgres: SELECT id FROM requests WHERE id IN (ids) AND estado=AB…
+    RequestController->>Postgres: SELECT id FROM requests WHERE id IN (ids) AND estado=ABERTA FOR UPDATE
     Postgres-->>RequestController: N rows válidas (count = N — sem divergência)
     RequestController->>Postgres: BEGIN TX
-    RequestController->>Postgres: UPDATE requests SET estado=DEFERIDA; INSERT request_eve…
-    RequestController->>Postgres: INSERT outbox_event(autorizacoes.deliberated, alunoId, …
-    RequestController->>Postgres: INSERT audit_log(image_auth.bulk_deliberate, operadorId…
+    RequestController->>Postgres: UPDATE requests SET estado=DEFERIDA; INSERT request_event × N
+    RequestController->>Postgres: INSERT outbox_event(autorizacoes.deliberated, alunoId) × N
+    RequestController->>Postgres: INSERT audit_log(image_auth.bulk_deliberate, operadorId, ids[])
     RequestController->>Postgres: COMMIT
     RequestController-->>WebApp: 200 {updated: N, ids}
-    WebApp-->>Secretaria: N linhas atualizam status=DEFERIDA (dispatch async → li…
+    WebApp-->>Secretaria: N linhas atualizam status=DEFERIDA (dispatch async → link 10.1b)
 ```
 
 **Notas:**
@@ -141,23 +141,23 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
-    Secretaria->>WebApp: aprova 5 IDs em lote (1 mudou de estado por outro opera…
-    WebApp->>JwtFilter: PATCH /requests/bulk-deliberate {ids[5], decisao=DEFERI…
+    Secretaria->>WebApp: aprova 5 IDs em lote (1 mudou de estado por outro operador)
+    WebApp->>JwtFilter: PATCH /requests/bulk-deliberate {ids[5], decisao=DEFERIDA}
     JwtFilter->>RequestController: repassa (secretariaId, image_authorization.review ✓)
-    RequestController->>Postgres: SELECT id FROM requests WHERE id IN (ids) AND estado=AB…
+    RequestController->>Postgres: SELECT id FROM requests WHERE id IN (ids) AND estado=ABERTA FOR UPDATE
     Postgres-->>RequestController: 4 rows (id_x ausente — estado=EM_TRIAGEM)
     RequestController-->>WebApp: 409 Problem Details (bulk_conflict — failedIds: [id_x])
-    WebApp-->>Secretaria: DS/AlertBanner "1 item mudou de estado — nenhuma altera…
+    WebApp-->>Secretaria: DS/AlertBanner "1 item mudou de estado — nenhuma alteração aplicada"
 ```
 
 **Notas:**

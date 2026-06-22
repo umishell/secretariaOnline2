@@ -62,11 +62,11 @@
 ```mermaid
 sequenceDiagram
   autonumber
-  box rgba(230,245,255,0.3) Cliente
+  box #f4f4f4 Cliente
     participant Egresso
     participant WebApp
   end
-  box rgba(255,245,230,0.3) Backend
+  box #fff8ee Servidor
     participant AlumniCtrl as AlumniController
     participant ProfileUC as GetAlumniProfileUC
     participant PG as Postgres
@@ -75,11 +75,11 @@ sequenceDiagram
   Egresso->>WebApp: navega /egresso/inicio
   WebApp->>AlumniCtrl: GET /alumni/me (Bearer, alumni.view_own ✓)
   AlumniCtrl->>ProfileUC: execute(alumniId)
-  ProfileUC->>PG: SELECT usuario, diploma, certificados[], colacao WHERE …
-  PG-->>ProfileUC: {nome, curso, conclusaoEm, cra, diploma, certificados[]…
+  ProfileUC->>PG: SELECT usuario, diploma, certificados[], colacao WHERE alumniId=:id
+  PG-->>ProfileUC: {nome, curso, conclusaoEm, cra, diploma, certificados[], _links}
   ProfileUC-->>AlumniCtrl: AlumniProfile + _links por certificado + diploma
   AlumniCtrl-->>WebApp: 200 {…}
-  WebApp-->>Egresso: renderiza dashboard read-only (KpiRow + Diploma + Certi…
+  WebApp-->>Egresso: renderiza dashboard read-only (KpiRow + Diploma + Certificados + Colacao)
 ```
 
 **Notas:**
@@ -100,18 +100,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   autonumber
-  box rgba(230,245,255,0.3) Cliente
+  box #f4f4f4 Cliente
     participant Egresso
     participant WebApp
   end
-  box rgba(255,245,230,0.3) Backend
+  box #fff8ee Servidor
     participant AlumniCtrl as AlumniController
     participant DownloadUC as DiplomaDownloadUC
     participant MinIO
   end
 
   Egresso->>WebApp: clica Download diploma (_links.download ✓)
-  WebApp->>AlumniCtrl: GET /alumni/me/diploma/download (Bearer, alumni.view_ow…
+  WebApp->>AlumniCtrl: GET /alumni/me/diploma/download (Bearer, alumni.view_own ✓)
   AlumniCtrl->>DownloadUC: presignedUrl(alumniId)
   DownloadUC->>MinIO: presignedGet(key=diploma/{uuid}.pdf, ttl=900s)
   MinIO-->>DownloadUC: URL pré-assinada (expira em 15 min)
@@ -138,11 +138,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   autonumber
-  box rgba(230,245,255,0.3) Cliente
+  box #f4f4f4 Cliente
     participant Egresso
     participant WebApp
   end
-  box rgba(255,245,230,0.3) Backend
+  box #fff8ee Servidor
     participant CertCtrl as CertificateController
     participant ReissueUC as ReissueCertificateUC
     participant PG as Postgres
@@ -150,7 +150,7 @@ sequenceDiagram
   end
 
   Egresso->>WebApp: clica Reemitir PDF (_links.reemitir ✓)
-  WebApp->>CertCtrl: POST /certificates/{id}/reissue (Bearer, alumni.view_ow…
+  WebApp->>CertCtrl: POST /certificates/{id}/reissue (Bearer, alumni.view_own ✓)
   CertCtrl->>ReissueUC: reissue(certId, alumniId)
   ReissueUC->>PG: SELECT certificate WHERE id=certId AND owner=alumniId
   PG-->>ReissueUC: {storage_key, hash, signature, estado=EMITIDO}
@@ -179,14 +179,14 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   autonumber
-  box rgba(230,245,255,0.3) Cliente
+  box #f4f4f4 Cliente
     participant Egresso
     participant WebApp
   end
 
   Egresso->>WebApp: navega /solicitacoes/nova (ou /formativas, /estagios)
   WebApp->>WebApp: RouteGuard.check(authorities, required=request.open)
-  WebApp-->>Egresso: redirect /erro/403 + "Você não tem permissão para acess…
+  WebApp-->>Egresso: redirect /erro/403 + "Você não tem permissão para acessar este recurso."
   Egresso->>WebApp: clica "Ir ao início"
   WebApp-->>Egresso: navega /egresso/inicio
 ```

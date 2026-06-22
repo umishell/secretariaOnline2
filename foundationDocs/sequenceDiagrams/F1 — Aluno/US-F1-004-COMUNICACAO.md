@@ -47,11 +47,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CommunicationsController
         participant Postgres
@@ -61,11 +61,11 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /communications (Bearer)
     JwtFilter->>JwtFilter: valida JWT + communication.read ✓
     JwtFilter->>CommunicationsController: repassa (alunoId)
-    CommunicationsController->>Postgres: SELECT communication_delivery + unread_count subquery W…
-    Postgres-->>CommunicationsController: [{id, tipo, titulo, prioridade, read_at, _links}, unrea…
+    CommunicationsController->>Postgres: SELECT communication_delivery + unread_count subquery WHERE destinatario_id=:alunoId
+    Postgres-->>CommunicationsController: [{id, tipo, titulo, prioridade, read_at, _links}, unreadCounts]
     CommunicationsController-->>WebApp: 200 {…}
     WebApp->>WebApp: useActions(_links) → filtra CTAs para items da tab Inbox
-    WebApp-->>Aluno: DS/Tabs com badges + lista CommunicationRow (unread dot…
+    WebApp-->>Aluno: DS/Tabs com badges + lista CommunicationRow (unread dot se read_at IS NULL)
 ```
 
 **Notas:**
@@ -87,21 +87,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CommunicationsController
         participant Postgres
     end
 
     Aluno->>WebApp: clica na comunicação (unread dot visível)
-    WebApp->>JwtFilter: POST /communications/{id}/read (Bearer; _links.marcar-l…
+    WebApp->>JwtFilter: POST /communications/{id}/read (Bearer; _links.marcar-lido href)
     JwtFilter->>JwtFilter: valida JWT + communication.read ✓
     JwtFilter->>CommunicationsController: repassa (alunoId, communicationId)
-    CommunicationsController->>Postgres: UPDATE communication_delivery SET read_at=now() WHERE i…
+    CommunicationsController->>Postgres: UPDATE communication_delivery SET read_at=now() WHERE id=:id AND destinatario_id=:alunoId
     CommunicationsController-->>WebApp: 200 OK
     WebApp-->>Aluno: unread dot some + badge topbar decrementado
 ```
@@ -124,11 +124,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CommunicationsController
         participant Postgres
@@ -138,10 +138,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /communications?lido=false&tipo=INSTITUCIONAL (Bearer)
     JwtFilter->>JwtFilter: valida JWT + communication.read ✓
     JwtFilter->>CommunicationsController: repassa (alunoId, filtros)
-    CommunicationsController->>Postgres: SELECT communication_delivery WHERE destinatario_id=:al…
+    CommunicationsController->>Postgres: SELECT communication_delivery WHERE destinatario_id=:alunoId AND lido=false AND tipo=INSTITUCIONAL
     Postgres-->>CommunicationsController: [{filtered}} (ou [] se vazio)
     CommunicationsController-->>WebApp: 200 {communications: [...], unreadCounts, _links}
-    WebApp-->>Aluno: lista filtrada OU DS/EmptyState "Nenhuma comunicação en…
+    WebApp-->>Aluno: lista filtrada OU DS/EmptyState "Nenhuma comunicação encontrada neste filtro."
 ```
 
 **Notas:**

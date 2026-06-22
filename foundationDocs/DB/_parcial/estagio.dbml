@@ -1,0 +1,42 @@
+// ============================================================
+// M5 — Estágio (2 tabelas)
+// Fonte: §5.3 analise_arquitetural
+// ============================================================
+
+Table internship {
+  id                uuid         [pk, not null]
+  id_aluno          uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_orientador     uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_coe            uuid         [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; membro COE responsável; nullable']
+  empresa_nome      varchar(200) [not null]
+  supervisor_nome   varchar(200)
+  supervisor_email  citext
+  supervisor_tel    varchar(30)
+  data_ini          date         [not null]
+  data_fim_prevista date
+  data_fim          date
+  ch_semanal        integer      [note: 'carga horária semanal acordada']
+  valor_bolsa_cents integer      [note: 'em centavos para evitar float; null = sem bolsa']
+  obrigatorio       boolean      [not null, note: 'true = estágio obrigatório do currículo']
+  num_contrato      varchar(50)
+  num_processo_sei  varchar(50)  [note: 'número SEI da UFPR para estágio obrigatório']
+  estado            varchar(30)  [not null, note: 'EM_ANDAMENTO, CONCLUIDO, CANCELADO, SUSPENSO']
+  created_at        timestamptz  [default: `now()`]
+}
+
+Table internship_document {
+  id            uuid        [pk, not null]
+  id_internship uuid        [not null, ref: > internship.id, note: 'CASCADE']
+  categoria     varchar(50) [not null, note: 'CONTRATO, TERMO_ADITIVO, RELATORIO_PARCIAL, RELATORIO_FINAL']
+  storage_key   varchar(500) [not null]
+  sha256        char(64)    [not null]
+  emitido_em    date
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M5
+// ============================================================
+// internship.id_aluno      →  usuario.id  (M1 IAM)
+// internship.id_orientador →  usuario.id  (M1 IAM)
+// internship.id_coe        →  usuario.id  (M1 IAM)
+// ============================================================

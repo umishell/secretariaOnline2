@@ -72,13 +72,13 @@ sequenceDiagram
 
     Coordenador->>WebApp: acessa /coordenacao/relatorios?periodo=2025-2&curso=TADS
     WebApp->>WebApp: TanStack Query cache MISS (staleTime=5min expirado)
-    WebApp->>ReportController: GET /reports/coordinator?periodo=2025-2&curso=TADS (Bea…
+    WebApp->>ReportController: GET /reports/coordinator?periodo=2025-2&curso=TADS (Bearer, report.view_coordinator ✓)
     ReportController->>GetCoordinatorReportUC: buildReport(filters, userId, cursosIds)
-    GetCoordinatorReportUC->>Postgres: SELECT KPIs: tempoMedioDeliberacao, taxaIndeferimento, …
+    GetCoordinatorReportUC->>Postgres: SELECT KPIs: tempoMedioDeliberacao, taxaIndeferimento, volumeFormativas, taxaPresenca
     Postgres-->>GetCoordinatorReportUC: kpis[] + thresholdIndeferimento
-    GetCoordinatorReportUC->>Postgres: SELECT séries históricas: evasaoPorPeriodo, seriesForma…
+    GetCoordinatorReportUC->>Postgres: SELECT séries históricas: evasaoPorPeriodo, seriesFormativas
     Postgres-->>GetCoordinatorReportUC: datasets gráficos[]
-    GetCoordinatorReportUC->>Postgres: SELECT pendencias, solicitacoesTopSla, proximosEventos,…
+    GetCoordinatorReportUC->>Postgres: SELECT pendencias, solicitacoesTopSla, proximosEventos, cargaPorDeliberador
     Postgres-->>GetCoordinatorReportUC: dados operacionais[]
     GetCoordinatorReportUC-->>ReportController: CoordinatorReportDto
     ReportController-->>WebApp: 200 {…}

@@ -1,0 +1,67 @@
+// ============================================================
+// M7 — Comunicação + Outbox (4 tabelas)
+// Fonte: §5.3 analise_arquitetural
+// Decisão I9: communication_delivery.id_destinatario → usuario
+//             notification_preference 1:1 com usuario (não ref de delivery)
+// ============================================================
+
+Table communication {
+  id           uuid         [pk, not null]
+  tipo         varchar(30)  [not null, note: 'NOTICIA, AVISO, COMUNICADO_PROF, OPORTUNIDADE']
+  prioridade   smallint     [not null, note: '1=baixa, 2=media, 3=alta, 4=critica']
+  titulo       varchar(200) [not null]
+  corpo_md     text         [not null, note: 'Markdown — renderizado no hub e no email']
+  id_curso_alvo uuid        [ref: > curso.id, note: 'FK cross-módulo → M2; null = todos os cursos']
+  audiencia    jsonb        [not null, default: `'{}'`, note: 'filtros de público: roles[], cursos[], etc.']
+  publicado_em timestamptz  [not null, default: `now()`]
+  expira_em    timestamptz
+  id_autor     uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+}
+
+// Decisão I9: fk → usuario.id (não → notification_preference)
+Table communication_delivery {
+  id              uuid        [pk, not null]
+  id_comm         uuid        [not null, ref: > communication.id, note: 'CASCADE']
+  id_destinatario uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  canal           varchar(20) [not null, note: 'PUSH | EMAIL | INAPP']
+  estado          varchar(20) [not null, note: 'PENDENTE | ENVIADO | FALHOU | LIDO']
+  tentativas      smallint    [not null, default: 0]
+  last_error      text
+  sent_at         timestamptz
+  read_at         timestamptz
+}
+
+// Decisão I9: notification_preference consultada pelo dispatcher para decidir canal/DND
+// PK = id_usuario (1:1 com usuario — ON DELETE CASCADE)
+Table notification_preference {
+  id_usuario uuid  [pk, not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; CASCADE']
+  email_on   jsonb [not null, default: `'{"critical":true,"high":true}'`]
+  push_on    jsonb [not null, default: `'{"critical":true,"high":true,"medium":true}'`]
+  dnd_from   time  [note: 'início do período Não Perturbe']
+  dnd_to     time  [note: 'fim do período Não Perturbe']
+}
+
+// Outbox Pattern — aggregate_id é referência polimórfica (sem FK fixa)
+// status: PENDING → SENT | FAILED → DEAD (após max tentativas)
+Table outbox_event {
+  id              uuid         [pk, not null]
+  aggregate_type  varchar(50)  [not null, note: 'ex: solicitacoes, iam, presenca']
+  aggregate_id    uuid         [not null, note: 'referência polimórfica — sem FK física']
+  event_type      varchar(100) [not null, note: 'ex: iam.password_reset_requested, solicitacoes.deliberated']
+  payload         jsonb        [not null, note: 'dados para o dispatcher (destinatário, template, vars)']
+  status          varchar(20)  [not null, default: 'PENDING', note: 'PENDING | SENT | FAILED | DEAD']
+  tentativas      smallint     [not null, default: 0]
+  next_attempt_at timestamptz  [not null, default: `now()`]
+  created_at      timestamptz  [not null, default: `now()`]
+  processed_at    timestamptz
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M7
+// ============================================================
+// communication.id_curso_alvo       →  curso.id    (M2 Acadêmico)
+// communication.id_autor            →  usuario.id  (M1 IAM)
+// communication_delivery.id_destinatario → usuario.id (M1 IAM)
+// notification_preference.id_usuario → usuario.id (M1 IAM)
+// outbox_event: aggregate_id é polimórfico — sem FK registrada
+// ============================================================

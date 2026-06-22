@@ -54,11 +54,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CommunicationController
         participant Postgres
@@ -71,7 +71,7 @@ sequenceDiagram
     CommunicationController->>Postgres: SELECT turmas, cursos WHERE professor=professorId
     Postgres-->>CommunicationController: [{audienceId, label, scope: TURMA | CURSO}]
     CommunicationController-->>WebApp: 200 [{audienceId, label, scope}]
-    WebApp-->>Professor: DS/Select audiência populado (apenas turmas/cursos do p…
+    WebApp-->>Professor: DS/Select audiência populado (apenas turmas/cursos do professor)
 ```
 
 **Notas:**
@@ -91,30 +91,30 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CommunicationController
         participant PublishCommunicationUC as PublishCommunicationUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: preenche título + corpo Markdown + audiência + priorida…
-    WebApp->>JwtFilter: POST /communications {titulo, corpo, audienciaId, prior…
+    Professor->>WebApp: preenche título + corpo Markdown + audiência + prioridade + expiraEm
+    WebApp->>JwtFilter: POST /communications {titulo, corpo, audienciaId, prioridade, expiraEm} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + communication.publish_class ✓
     JwtFilter->>CommunicationController: repassa (professorId)
     CommunicationController->>PublishCommunicationUC: execute(dto, professorId)
     PublishCommunicationUC->>Postgres: BEGIN TX
     PublishCommunicationUC->>Postgres: valida audienciaId IN professor.audiences ✓ (RN-F3.8-01)
-    PublishCommunicationUC->>Postgres: INSERT communication (titulo, corpo, audienciaId, prior…
-    PublishCommunicationUC->>Postgres: INSERT outbox_event (type=comunicacao.published, {commu…
+    PublishCommunicationUC->>Postgres: INSERT communication (titulo, corpo, audienciaId, prioridade, expiraEm, publicadoPor)
+    PublishCommunicationUC->>Postgres: INSERT outbox_event (type=comunicacao.published, {communicationId, audienciaId})
     PublishCommunicationUC->>Postgres: COMMIT
     PublishCommunicationUC-->>CommunicationController: CommunicationDto {id, titulo, _links}
     CommunicationController-->>WebApp: 201 Created {id, titulo, _links}
-    WebApp-->>Professor: DS/AlertBanner success "Comunicado publicado com sucess…
+    WebApp-->>Professor: DS/AlertBanner success "Comunicado publicado com sucesso."
 ```
 
 **Notas:**
@@ -136,19 +136,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
     end
 
-    Professor->>WebApp: acessa /comunicacao/publicar (sem communication.publish…
+    Professor->>WebApp: acessa /comunicacao/publicar (sem communication.publish_class na sessão)
     WebApp->>JwtFilter: GET /communications/audiences (Bearer)
     JwtFilter->>JwtFilter: valida JWT + communication.publish_class ✗
-    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: communica…
-    WebApp-->>Professor: redirecionamento /inicio (menu "Publicar" não exibido p…
+    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: communication.publish_class)
+    WebApp-->>Professor: redirecionamento /inicio (menu "Publicar" não exibido por HATEOAS)
 ```
 
 ### Cenário B — 422 audiência fora do scope do professor
@@ -156,18 +156,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CommunicationController
         participant PublishCommunicationUC as PublishCommunicationUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: submete POST com audienciaId de outra turma (payload ad…
+    Professor->>WebApp: submete POST com audienciaId de outra turma (payload adulterado)
     WebApp->>JwtFilter: POST /communications {audienciaId: EXTERNO} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + communication.publish_class ✓
     JwtFilter->>CommunicationController: repassa (professorId)

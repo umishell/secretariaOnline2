@@ -65,14 +65,14 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Acessa /admin/jobs (aba FAILED ativa por default)
-    WebApp->>OutboxController: GET /admin/outbox?status=FAILED&page=0&size=20 (Bearer,…
+    WebApp->>OutboxController: GET /admin/outbox?status=FAILED&page=0&size=20 (Bearer, system.observe ✓)
     OutboxController->>ListOutboxEventsUC: execute(OutboxQuery{status=FAILED, page})
-    ListOutboxEventsUC->>Postgres: SELECT outbox_event BY status=FAILED ORDER BY created_a…
-    ListOutboxEventsUC->>Postgres: SELECT min(created_at) WHERE status=PENDING (dispatcher…
+    ListOutboxEventsUC->>Postgres: SELECT outbox_event BY status=FAILED ORDER BY created_at DESC
+    ListOutboxEventsUC->>Postgres: SELECT min(created_at) WHERE status=PENDING (dispatcher lag)
     Postgres-->>ListOutboxEventsUC: Page<OutboxEventEntity> + oldestPendingCreatedAt
     ListOutboxEventsUC-->>OutboxController: Page<OutboxEventDto> + meta{oldestPendingMs}
     OutboxController-->>WebApp: 200 {…}
-    WebApp-->>Admin: DS/OutboxEventTable; FAILED com badge danger; retry via…
+    WebApp-->>Admin: DS/OutboxEventTable; FAILED com badge danger; retry via _links.retry
 ```
 
 **Notas:**
@@ -100,15 +100,15 @@ sequenceDiagram
     participant RetryOutboxEventUC as RetryOutboxEventUseCase
     participant Postgres
 
-    Admin->>WebApp: Clica "Reentregar" na linha do evento DEAD (via _links.…
+    Admin->>WebApp: Clica "Reentregar" na linha do evento DEAD (via _links.retry)
     WebApp->>OutboxController: POST /admin/outbox/:id/retry (Bearer, system.observe ✓)
     OutboxController->>RetryOutboxEventUC: execute(eventId, operadorId)
     RetryOutboxEventUC->>Postgres: SELECT outbox_event BY id FOR UPDATE
     Postgres-->>RetryOutboxEventUC: OutboxEventEntity {status=DEAD, tentativas=5}
-    RetryOutboxEventUC->>Postgres: UPDATE outbox_event SET status=PENDING, tentativas=0, r…
+    RetryOutboxEventUC->>Postgres: UPDATE outbox_event SET status=PENDING, tentativas=0, retried_by=operadorId
     RetryOutboxEventUC-->>OutboxController: OutboxEventDto {id, status='PENDING'}
     OutboxController-->>WebApp: 200 {id, status='PENDING'}
-    WebApp-->>Admin: Badge PENDING; toast "Evento reenfileirado"; botão retr…
+    WebApp-->>Admin: Badge PENDING; toast "Evento reenfileirado"; botão retry desaparece
 ```
 
 **Notas:**
@@ -140,11 +140,11 @@ sequenceDiagram
     Admin->>WebApp: Acessa seção Scheduled Jobs em /admin/jobs
     WebApp->>JobsController: GET /admin/scheduled-jobs (Bearer, system.observe ✓)
     JobsController->>ListJobsUC: execute()
-    ListJobsUC->>Postgres: SELECT scheduled_job_status {nome, frequencia, ultimoRu…
+    ListJobsUC->>Postgres: SELECT scheduled_job_status {nome, frequencia, ultimoRun, proximoRun, status}
     Postgres-->>ListJobsUC: JobStatusEntity[]
     ListJobsUC-->>JobsController: JobStatusDto[]
     JobsController-->>WebApp: 200 [{nome, frequencia, ultimoRun, proximoRun, status}]
-    WebApp-->>Admin: DS/ScheduledJobCard por job; badge ATRASADO/FALHOU em w…
+    WebApp-->>Admin: DS/ScheduledJobCard por job; badge ATRASADO/FALHOU em warning
 ```
 
 **Notas:**

@@ -1,0 +1,46 @@
+// ============================================================
+// M9 — Certificado + Auditoria (2 tabelas)
+// Fonte: §5.3 analise_arquitetural + §11 (anti-fraude)
+// ============================================================
+
+// Certificados gerados pelo sistema — nunca uploadados manualmente
+// hash_sha256 único: garante imutabilidade e verificação pública
+Table certificate {
+  id              uuid          [pk, not null]
+  id_beneficiario uuid          [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_evento       uuid          [ref: > event_attendance.id, note: 'FK cross-módulo → M8 Presença; null se origem formativa']
+  id_formativa    uuid          [ref: > formative_entry.id, note: 'FK cross-módulo → M4 Formativas; null se origem evento']
+  titulo          varchar(200)  [not null]
+  ch_horas        numeric(5,2)  [not null]
+  emitido_em      timestamptz   [not null, default: `now()`]
+  emitente_nome   varchar(200)  [not null, note: 'nome da instituição/órgão emissor']
+  hash_sha256     char(64)      [unique, not null, note: 'SHA-256 do PDF canônico — verificação pública']
+  signature_alg   varchar(30)   [not null, note: 'ED25519 | SHA256_RSA_PSS | ICP']
+  signature_b64   text          [not null, note: 'assinatura ED25519 em Base64']
+  verifier_url    varchar(300)  [not null, note: '/publico/verificar-certificado/:hash']
+  storage_key     varchar(500)  [not null, note: 'PDF no object storage (MinIO/S3)']
+}
+
+// Auditoria imutável — append-only; cobre todos os módulos
+// id_ator nullable: ações anônimas (ex: reset senha, verificação pública)
+Table audit_log {
+  id         uuid        [pk, not null]
+  at         timestamptz [not null, default: `now()`]
+  id_ator    uuid        [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; nullable']
+  acao       varchar(100) [not null, note: 'ex: iam.login_success, solicitacoes.deliberated, presenca.session_created']
+  alvo_tipo  varchar(50)  [not null, note: 'ex: usuario, request, event_attendance']
+  alvo_id    uuid         [note: 'UUID do recurso afetado; null para ações globais']
+  ip         inet
+  user_agent text
+  payload    jsonb        [note: 'contexto da ação (sem dados sensíveis); delta via request_event']
+  resultado  varchar(20)  [not null, note: 'OK | DENIED | ERROR']
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M9
+// ============================================================
+// certificate.id_beneficiario  →  usuario.id          (M1 IAM)
+// certificate.id_evento        →  event_attendance.id (M8 Presença)
+// certificate.id_formativa     →  formative_entry.id  (M4 Formativas)
+// audit_log.id_ator            →  usuario.id          (M1 IAM; nullable)
+// ============================================================

@@ -1,0 +1,43 @@
+// ============================================================
+// M6 — TCC (3 tabelas)
+// Fonte: §5.3 analise_arquitetural
+// PK compostas em tcc_member e tcc_examiner (jpaInterfaces)
+// ============================================================
+
+Table tcc {
+  id          uuid         [pk, not null]
+  id_curso    uuid         [not null, ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  tema        varchar(300) [not null]
+  data_defesa timestamptz  [note: 'null = ainda não agendado']
+  id_sala     uuid         [note: 'reserva de sala — referência futura; sem FK física neste módulo']
+  link_artigo varchar(500)
+  storage_key varchar(500) [note: 'PDF final do TCC no object storage']
+  estado      varchar(30)  [not null, note: 'EM_ANDAMENTO, ENTREGUE, APROVADO, REPROVADO']
+}
+
+Table tcc_member {
+  id_tcc   uuid [not null, ref: > tcc.id, note: 'CASCADE']
+  id_aluno uuid [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+
+  Indexes {
+    (id_tcc, id_aluno) [pk]
+  }
+}
+
+Table tcc_examiner {
+  id_tcc       uuid    [not null, ref: > tcc.id, note: 'CASCADE']
+  id_professor uuid    [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  orientador   boolean [not null, note: 'true = orientador principal; false = membro da banca']
+
+  Indexes {
+    (id_tcc, id_professor) [pk]
+  }
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M6
+// ============================================================
+// tcc.id_curso          →  curso.id    (M2 Acadêmico)
+// tcc_member.id_aluno   →  usuario.id  (M1 IAM)
+// tcc_examiner.id_professor → usuario.id (M1 IAM)
+// ============================================================

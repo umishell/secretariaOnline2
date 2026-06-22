@@ -60,18 +60,18 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ServiceController
         participant Postgres
     end
 
     Secretaria->>WebApp: acessa /secretaria/atendimentos
-    WebApp->>JwtFilter: GET /service-record-categories (Bearer, service_record.…
+    WebApp->>JwtFilter: GET /service-record-categories (Bearer, service_record.create ✓)
     JwtFilter->>ServiceController: repassa (secretariaId)
     ServiceController->>Postgres: SELECT categorias WHERE ativo=true ORDER BY nome
     Postgres-->>ServiceController: [{id, nome}]
@@ -80,7 +80,7 @@ sequenceDiagram
     Secretaria->>WebApp: digita "20231234" no Combobox (debounce 300 ms)
     WebApp->>JwtFilter: GET /students?q=20231234 (Bearer)
     JwtFilter->>ServiceController: repassa (secretariaId, cursoIds[])
-    ServiceController->>Postgres: SELECT usuario WHERE (grr=20231234 OR nome ILIKE %20231…
+    ServiceController->>Postgres: SELECT usuario WHERE (grr=20231234 OR nome ILIKE %20231234%)
     Postgres-->>ServiceController: [{id, nome, grr, curso}]
     ServiceController-->>WebApp: 200 [{id, nome, grr, curso}]
     WebApp-->>Secretaria: sugestão "João Silva - GRR20231234" no Combobox
@@ -104,11 +104,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ServiceController
         participant MinIO
@@ -116,19 +116,19 @@ sequenceDiagram
     end
 
     Secretaria->>WebApp: confirma formulário com anexo PDF (2 MB)
-    WebApp->>JwtFilter: GET /service-records/upload-url {tipo: application/pdf}…
+    WebApp->>JwtFilter: GET /service-records/upload-url {tipo: application/pdf} (Bearer)
     JwtFilter->>ServiceController: repassa (secretariaId, service_record.create ✓)
-    ServiceController->>MinIO: GET presigned PUT URL (TTL=15 min, key=atendimentos/{uu…
+    ServiceController->>MinIO: GET presigned PUT URL (TTL=15 min, key=atendimentos/{uuid}.pdf)
     MinIO-->>ServiceController: presigned_url
     ServiceController-->>WebApp: 200 {upload_url, storage_key}
     WebApp->>MinIO: PUT {file_bytes} via upload_url
     MinIO-->>WebApp: 200 (ETag)
-    WebApp->>JwtFilter: POST /service-records {alunoId, categoriaId, assunto, r…
+    WebApp->>JwtFilter: POST /service-records {alunoId, categoriaId, assunto, resposta, storage_key}
     JwtFilter->>ServiceController: repassa (secretariaId, service_record.create ✓)
-    ServiceController->>Postgres: BEGIN TX — INSERT service_record(alunoId, categoriaId, …
+    ServiceController->>Postgres: BEGIN TX — INSERT service_record + INSERT outbox_event(atendimento.registrado)
     ServiceController->>Postgres: COMMIT
     ServiceController-->>WebApp: 201 {id, numero=AT-2025-001, _links}
-    WebApp-->>Secretaria: toast "Atendimento registrado" (aluno notificado async …
+    WebApp-->>Secretaria: toast "Atendimento registrado" (aluno notificado async via 10.1b)
 ```
 
 **Notas:**

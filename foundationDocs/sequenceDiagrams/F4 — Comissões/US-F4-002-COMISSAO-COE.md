@@ -49,31 +49,31 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
         participant RQ as TanStack Query
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as COEController
         participant UC as GetCOEDashboardUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: Navega para /comissoes/coe
     WebApp->>RQ: useQuery(['coe','dashboard'])
-    RQ->>CTRL: GET /commissions/coe/dashboard (Bearer, internship.revi…
+    RQ->>CTRL: GET /commissions/coe/dashboard (Bearer, internship.review ✓)
     CTRL->>UC: execute(userId, cursoIds)
-    UC->>DB: SELECT internships WHERE (assignee IS NULL OR assignee=…
+    UC->>DB: SELECT internships WHERE (assignee IS NULL OR assignee=userId)
     DB-->>UC: internships[] com document_due_date por item
-    UC->>DB: SELECT KPIs (pool_total, assigned_to_me, docs_overdue, …
+    UC->>DB: SELECT KPIs (pool_total, assigned_to_me, docs_overdue, avg_sla)
     DB-->>UC: KpiRow data
     UC-->>CTRL: COEDashboardDto {kpis, items, _links}
     CTRL-->>RQ: 200 {kpis, items, _links}
     RQ-->>WebApp: data (cache populado)
-    WebApp-->>Professor: Renderiza KpiRow + DataTable (document_due_date < now →…
+    WebApp-->>Professor: Renderiza KpiRow + DataTable (document_due_date < now → status/danger)
 ```
 
 **Notas:**
@@ -94,26 +94,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as COEController
         participant UC as AssignInternshipUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: Clica "Atribuir a mim" (_links.assign-member ✓)
-    WebApp->>CTRL: POST /commissions/coe/assign {internshipId, assigneeId:…
+    WebApp->>CTRL: POST /commissions/coe/assign {internshipId, assigneeId: self}
     CTRL->>UC: execute(AssignCommand{internshipId, assigneeId=self})
-    UC->>DB: SELECT internship BY internshipId (cursoScope ✓, assign…
+    UC->>DB: SELECT internship BY internshipId (cursoScope ✓, assignee IS NULL)
     DB-->>UC: Internship {id, alunoId, ...} (disponível)
     UC->>DB: BEGIN TX
     UC->>DB: UPDATE internship SET assignee_id=self, assigned_at=now()
-    UC->>DB: INSERT outbox_event(type='estagios.assigned', payload={…
+    UC->>DB: INSERT outbox_event(type='estagios.assigned', payload={…})
     UC->>DB: COMMIT
     UC-->>CTRL: Internship updated + _links
     CTRL-->>WebApp: 200 {item, _links}
@@ -138,34 +138,34 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as COEController
         participant MUC as GetCOEMembersUC
         participant AUC as AssignInternshipUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: Clica "Atribuir..." na linha (_links.assign-member ✓)
-    WebApp->>CTRL: GET /commissions/coe/members?cursoId=X (Bearer, interns…
+    WebApp->>CTRL: GET /commissions/coe/members?cursoId=X (Bearer, internship.review ✓)
     CTRL->>MUC: execute(cursoId)
-    MUC->>DB: SELECT users JOIN commission_members WITH load=COUNT(ac…
+    MUC->>DB: SELECT users JOIN commission_members WITH load=COUNT(active_load)
     DB-->>MUC: members[] {id, nome, load}
     MUC-->>CTRL: COEMembersDto
     CTRL-->>WebApp: 200 {members: [{id, nome, load}]}
-    WebApp-->>Professor: DS/AssignmentBoard abre (membro com load acima da média…
+    WebApp-->>Professor: DS/AssignmentBoard abre (membro com load acima da média — DS/Badge warning)
     Professor->>WebApp: Seleciona orientador + clica "Confirmar"
-    WebApp->>CTRL: POST /commissions/coe/assign {internshipId, assigneeId:…
-    CTRL->>AUC: execute(AssignCommand{internshipId, assigneeId=orientad…
-    AUC->>DB: BEGIN TX; UPDATE internship SET assignee_id=orientador;…
+    WebApp->>CTRL: POST /commissions/coe/assign {internshipId, assigneeId: orientador}
+    CTRL->>AUC: execute(AssignCommand{internshipId, assigneeId=orientador})
+    AUC->>DB: BEGIN TX; UPDATE internship SET assignee_id=orientador; INSERT outbox
     AUC-->>CTRL: Internship updated
     CTRL-->>WebApp: 200 {item, _links}
-    WebApp-->>Professor: Overlay fecha, badge da linha atualiza com nome do orie…
+    WebApp-->>Professor: Overlay fecha, badge da linha atualiza com nome do orientador
 ```
 
 **Notas:**
@@ -186,19 +186,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as COEController
         participant UC as AssignInternshipUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
-    Professor->>WebApp: Seleciona N estágios → BulkActionBar aparece (somente "…
+    Professor->>WebApp: Seleciona N estágios → BulkActionBar aparece (somente "Atribuir selecionados")
     Professor->>WebApp: Clica "Atribuir selecionados"
     WebApp->>CTRL: GET /commissions/coe/members (Bearer, internship.review ✓)
     CTRL->>DB: SELECT commission_members WITH active internship load
@@ -206,14 +206,14 @@ sequenceDiagram
     CTRL-->>WebApp: 200 {members}
     WebApp-->>Professor: DS/AssignmentBoard abre para N estágios selecionados
     Professor->>WebApp: Seleciona orientador + "Confirmar para todos (N)"
-    WebApp->>CTRL: POST /commissions/coe/assign {internshipIds:[...N], ass…
+    WebApp->>CTRL: POST /commissions/coe/assign {internshipIds:[...N], assigneeId}
     CTRL->>UC: execute(BulkAssignCommand{ids, assigneeId})
-    UC->>DB: SELECT internships WHERE id IN (ids) FOR UPDATE (cursoS…
+    UC->>DB: SELECT internships WHERE id IN (ids) FOR UPDATE (cursoScope ✓)
     DB-->>UC: N internships com alunoIds[]
-    UC->>DB: BEGIN TX; UPDATE N internships SET assignee_id; INSERT …
+    UC->>DB: BEGIN TX; UPDATE N internships SET assignee_id; INSERT N outbox_events
     UC-->>CTRL: BulkAssignResult {assigned: N}
     CTRL-->>WebApp: 200 {assigned: N, _links}
-    WebApp-->>Professor: N linhas com badge "Comigo", KPI "Atribuídos a mim" inc…
+    WebApp-->>Professor: N linhas com badge "Comigo", KPI "Atribuídos a mim" incrementa
 ```
 
 **Notas:**
@@ -234,15 +234,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as COEController
         participant UC as AssignInternshipUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
@@ -252,15 +252,15 @@ sequenceDiagram
     CTRL-->>WebApp: 403 Problem Details (access_denied)
     WebApp-->>Professor: Redireciona para /inicio (sidebar nunca exibe o link)
 
-    Professor->>WebApp: POST assign com internshipId de outro curso (bypass man…
-    WebApp->>CTRL: POST /commissions/coe/assign {internshipId, assigneeId}…
+    Professor->>WebApp: POST assign com internshipId de outro curso (bypass manual)
+    WebApp->>CTRL: POST /commissions/coe/assign {internshipId, assigneeId} (Bearer)
     CTRL->>UC: execute(AssignCommand)
     UC->>DB: SELECT internship BY internshipId WITH curso_id
     DB-->>UC: Internship {curso_id: Y}
-    UC->>UC: check curso_id Y ∉ professor.coe.cursoIds → scope viola…
+    UC->>UC: check curso_id Y ∉ professor.coe.cursoIds → scope violation
     UC-->>CTRL: 403 course_scope_violation
     CTRL-->>WebApp: 403 Problem Details (course_scope_violation)
-    WebApp-->>Professor: DS/AlertBanner error "Acesso negado — estágio fora do e…
+    WebApp-->>Professor: DS/AlertBanner error "Acesso negado — estágio fora do escopo do COE"
 ```
 
 **Notas:**

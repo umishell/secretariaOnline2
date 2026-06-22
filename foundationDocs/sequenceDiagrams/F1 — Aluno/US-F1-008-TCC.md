@@ -48,11 +48,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
         participant Postgres
@@ -62,10 +62,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /tccs?aluno=me (Bearer)
     JwtFilter->>JwtFilter: valida JWT + tcc.view_own ✓
     JwtFilter->>TccController: repassa (alunoId)
-    TccController->>Postgres: SELECT tcc WHERE aluno_id=:alunoId ORDER BY created_at …
+    TccController->>Postgres: SELECT tcc WHERE aluno_id=:alunoId ORDER BY created_at DESC
     Postgres-->>TccController: [{id, titulo, orientador, situacao, data_defesa_prevista}]
     TccController-->>WebApp: 200 {tccs: [...]}
-    WebApp-->>Aluno: tabela (Título, Orientador, Situação DS/Badge, Data def…
+    WebApp-->>Aluno: tabela (Título, Orientador, Situação DS/Badge, Data defesa prevista)
 ```
 
 **Notas:**
@@ -86,11 +86,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
         participant Postgres
@@ -100,11 +100,11 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /tccs/{id} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + tcc.view_own ✓ + aluno_id = alunoId
     JwtFilter->>TccController: repassa (alunoId, tccId)
-    TccController->>Postgres: SELECT tcc JOIN tcc_member (equipe+banca) JOIN tcc_even…
-    Postgres-->>TccController: {tcc, equipe, banca: [{nome, papel}], datasChave: {entr…
+    TccController->>Postgres: SELECT tcc JOIN tcc_member (equipe+banca) JOIN tcc_event ORDER BY created_at DESC
+    Postgres-->>TccController: {tcc, equipe, banca: [{nome, papel}], datasChave: {entrega, defesa}, tccEvents, _links}
     TccController-->>WebApp: 200 {…}
-    WebApp->>WebApp: useActions(_links) → botão "Enviar versão final" apenas…
-    WebApp-->>Aluno: detalhe (equipe, banca, datas, timeline com resultados,…
+    WebApp->>WebApp: useActions(_links) → botão "Enviar versão final" apenas se _links.upload-final presente
+    WebApp-->>Aluno: detalhe (equipe, banca, datas, timeline com resultados, datas-chave, anexos)
 ```
 
 **Notas:**
@@ -126,24 +126,24 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
         participant SubmitTccUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: clica "Enviar versão final" (fileKey disponível via Min…
+    Aluno->>WebApp: clica "Enviar versão final" (fileKey disponível via MinIO presigned PUT ✓)
     WebApp->>JwtFilter: POST /tccs/{id}/upload {fileKey} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + tcc.view_own ✓
     JwtFilter->>TccController: repassa (alunoId, tccId, fileKey)
     TccController->>SubmitTccUseCase: execute(cmd)
-    SubmitTccUseCase->>Postgres: BEGIN; UPDATE tcc SET fileKey=:key, situacao=SUBMETIDO,…
-    SubmitTccUseCase->>Postgres: INSERT tcc_event {tipo=SUBMISSAO, data=now()} + INSERT …
+    SubmitTccUseCase->>Postgres: BEGIN; UPDATE tcc SET fileKey=:key, situacao=SUBMETIDO, updated_at=now()
+    SubmitTccUseCase->>Postgres: INSERT tcc_event {tipo=SUBMISSAO, data=now()} + INSERT outbox_event(tcc.submitted, tccId, bancaIds) + COMMIT
     TccController-->>WebApp: 200 OK {situacao: SUBMETIDO, _links}
     WebApp-->>Aluno: badge "SUBMETIDO" + botão "Enviar versão final" desaparece
 ```

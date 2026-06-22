@@ -57,11 +57,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant Redis
@@ -70,14 +70,14 @@ sequenceDiagram
 
     Secretaria->>WebApp: navega para /inicio
     WebApp->>JwtFilter: GET /bff/dashboard/secretary (Bearer, staleTime=60s MISS)
-    JwtFilter->>DashboardBFF: repassa (secretariaId, cursoIds[], dashboard.view_secre…
+    JwtFilter->>DashboardBFF: repassa (secretariaId, cursoIds[], dashboard.view_secretary ✓)
     DashboardBFF->>Redis: GET dashboard:{secretariaId}
     Redis-->>DashboardBFF: MISS
-    DashboardBFF->>Postgres: SELECT kpis, filaPriorizada (≤10 prazo_em ASC), alertas…
+    DashboardBFF->>Postgres: SELECT kpis, filaPriorizada (≤10 prazo_em ASC), alertasSla, agendaHoje
     Postgres-->>DashboardBFF: dados agregados
     DashboardBFF->>Redis: SET dashboard:{secretariaId} TTL=60s
     DashboardBFF-->>WebApp: 200 {kpis, filaPriorizada, alertasSla, agendaHoje, _links}
-    WebApp-->>Secretaria: KpiCards + FilaPriorizada + AlertaSLA + Agenda + QuickT…
+    WebApp-->>Secretaria: KpiCards + FilaPriorizada + AlertaSLA + Agenda + QuickTiles
 ```
 
 **Notas:**
@@ -99,21 +99,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant Postgres
     end
 
     Secretaria->>WebApp: clica em Refresh
-    WebApp->>WebApp: invalidateQueries([dashboard-secretary]) — Skeleton exi…
+    WebApp->>WebApp: invalidateQueries([dashboard-secretary]) — Skeleton exibido
     WebApp->>JwtFilter: GET /bff/dashboard/secretary (Bearer, force-refetch)
-    JwtFilter->>DashboardBFF: repassa (secretariaId, cursoIds[], dashboard.view_secre…
-    DashboardBFF->>Postgres: SELECT kpis, filaPriorizada, alertasSla, agendaHoje por…
+    JwtFilter->>DashboardBFF: repassa (secretariaId, cursoIds[], dashboard.view_secretary ✓)
+    DashboardBFF->>Postgres: SELECT kpis, filaPriorizada, alertasSla, agendaHoje por cursoIds[]
     Postgres-->>DashboardBFF: dados atualizados
     DashboardBFF-->>WebApp: 200 {kpis, filaPriorizada, alertasSla, agendaHoje, _links}
     WebApp-->>Secretaria: dashboard atualizado (Skeleton → renderização completa)
@@ -137,18 +137,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant OutroUsuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
     end
 
     OutroUsuario->>WebApp: acessa /inicio (sem dashboard.view_secretary)
     WebApp->>JwtFilter: GET /bff/dashboard/secretary (Bearer)
-    JwtFilter->>DashboardBFF: repassa (userId, authorities[] — dashboard.view_secreta…
+    JwtFilter->>DashboardBFF: repassa (userId, authorities[] — dashboard.view_secretary ✗)
     DashboardBFF-->>WebApp: 403 Problem Details (access_denied)
     WebApp-->>OutroUsuario: redireciona para /inicio do perfil correto
 ```

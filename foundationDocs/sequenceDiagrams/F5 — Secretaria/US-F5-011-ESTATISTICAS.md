@@ -59,11 +59,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ReportController
         participant SecretaryReportUC as SecretaryReportUseCase
@@ -71,12 +71,12 @@ sequenceDiagram
     end
 
     Secretaria->>WebApp: acessa /secretaria/estatisticas?periodo=2025-2 &curso=TADS
-    WebApp->>JwtFilter: GET /reports/secretary?periodo=2025-2&curso=TADS (Beare…
+    WebApp->>JwtFilter: GET /reports/secretary?periodo=2025-2&curso=TADS (Bearer, report.view_secretary ✓)
     JwtFilter->>JwtFilter: valida JWT + report.view_secretary ✓
     JwtFilter->>ReportController: repassa (secretariaId, filtros)
     ReportController->>SecretaryReportUC: execute(secretariaId, filtros)
     SecretaryReportUC->>Postgres: SELECT agregado — 4 datasets × filtros aplicados
-    Postgres-->>SecretaryReportUC: solicitacoesPorTipo · evolucaoTemporal · distribuicaoPo…
+    Postgres-->>SecretaryReportUC: solicitacoesPorTipo · evolucaoTemporal · distribuicaoPorEstado · rankingCursos
     SecretaryReportUC-->>ReportController: SecretaryReportDto (4 arrays)
     ReportController-->>WebApp: 200 {…}
     WebApp->>WebApp: TanStack Query cache 5min
@@ -102,17 +102,17 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
 
-    Secretaria->>WebApp: navega para /secretaria/estatisticas (filtros idênticos…
+    Secretaria->>WebApp: navega para /secretaria/estatisticas (filtros idênticos ao cache)
     WebApp->>WebApp: TanStack Query cache HIT (stale=false) → sem fetch HTTP
     WebApp-->>Secretaria: 4 gráficos renderizados instantaneamente (dados do cache)
     Secretaria->>WebApp: clica botão "Refresh"
-    WebApp->>WebApp: queryClient.invalidateQueries([reports, secretary, filt…
-    WebApp-->>Secretaria: DS/Skeleton (refetch em andamento → F5.11-D01 a partir …
+    WebApp->>WebApp: queryClient.invalidateQueries([reports, secretary, filtros])
+    WebApp-->>Secretaria: DS/Skeleton (refetch em andamento → F5.11-D01 a partir do passo 2)
 ```
 
 **Notas:**
@@ -133,19 +133,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ReportController
     end
 
-    Secretaria->>WebApp: acessa /secretaria/estatisticas (sem report.view_secret…
-    WebApp->>JwtFilter: GET /reports/secretary?periodo=...&curso=... (Bearer, r…
+    Secretaria->>WebApp: acessa /secretaria/estatisticas (sem report.view_secretary)
+    WebApp->>JwtFilter: GET /reports/secretary?periodo=...&curso=... (Bearer, report.view_secretary ✗)
     JwtFilter->>JwtFilter: valida JWT + report.view_secretary ✗ (authority ausente)
-    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: report.vi…
+    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: report.view_secretary)
     WebApp-->>Secretaria: DS/AlertBanner error (acesso negado — tela inacessível)
 ```
 

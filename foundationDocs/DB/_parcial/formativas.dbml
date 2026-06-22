@@ -1,0 +1,39 @@
+// ============================================================
+// M4 — Formativas (2 tabelas)
+// Fonte: §5.3 analise_arquitetural
+// ============================================================
+
+Table formative_activity {
+  id                uuid         [pk, not null]
+  id_curso          uuid         [not null, ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  descricao         varchar(300) [not null]
+  qtd_horas_max     integer      [not null, note: 'teto de horas aceitas para esta categoria']
+  doc_comprobatorio varchar(300) [note: 'descrição do comprovante exigido']
+  ativa             boolean      [not null, default: true]
+}
+
+Table formative_entry {
+  id               uuid        [pk, not null]
+  id_aluno         uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_activity      uuid        [not null, ref: > formative_activity.id]
+  horas_declaradas integer     [not null]
+  horas_validadas  integer     [note: 'preenchido após revisão; null = ainda não revisado']
+  estado           varchar(30) [not null, default: 'SUBMETIDA', note: 'SUBMETIDA, EM_REVISAO, APROVADA, REJEITADA']
+  parecer          text
+  id_storage_key   uuid        [note: 'UUID do comprovante no object storage (MinIO/S3)']
+  created_at       timestamptz [default: `now()`]
+  reviewed_at      timestamptz
+  reviewed_by      uuid        [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; professor/CAAF']
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M4
+// ============================================================
+// formative_activity.id_curso  →  curso.id    (M2 Acadêmico)
+// formative_entry.id_aluno     →  usuario.id  (M1 IAM)
+// formative_entry.reviewed_by  →  usuario.id  (M1 IAM)
+// ============================================================
+// FKs cross-módulo recebidas
+// ============================================================
+// M9  certificate.id_formativa →  formative_entry.id
+// ============================================================

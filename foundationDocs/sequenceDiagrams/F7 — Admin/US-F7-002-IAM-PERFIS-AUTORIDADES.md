@@ -64,10 +64,10 @@ sequenceDiagram
     Admin->>WebApp: Acessa /admin/perfis
     WebApp->>IAMController: GET /admin/perfis?q=&page=0 (Bearer, iam.manage_roles ✓)
     IAMController->>ListRolesUC: execute(RoleQuery, Pageable)
-    ListRolesUC->>Postgres: SELECT perfil + count(authorities) + count(usuarios) BY…
+    ListRolesUC->>Postgres: SELECT perfil + count(authorities) + count(usuarios) GROUP BY perfil
     Postgres-->>ListRolesUC: Page<RoleEntity>
     ListRolesUC-->>IAMController: Page<RoleDto> + _links por item
-    IAMController-->>WebApp: 200 Page<RoleDto> (_links: edit, delete?, assign-author…
+    IAMController-->>WebApp: 200 Page<RoleDto> (_links: edit, delete?, assign-authorities)
     WebApp-->>Admin: Tabela com badges Sistema/Customizado + ações _links
 ```
 
@@ -136,7 +136,7 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Acessa /admin/autoridades
-    WebApp->>IAMController: GET /admin/autoridades?modulo=&page=0 (Bearer, iam.mana…
+    WebApp->>IAMController: GET /admin/autoridades?modulo=&page=0 (Bearer, iam.manage_authorities ✓)
     IAMController->>ListAuthoritiesUC: execute(AuthorityQuery)
     ListAuthoritiesUC->>Postgres: SELECT authority BY modulo LIMIT n
     ListAuthoritiesUC->>Postgres: SELECT perfil + role_authority_assignments
@@ -172,18 +172,18 @@ sequenceDiagram
     participant Postgres
     participant CapabilityCache
 
-    Admin->>WebApp: Marca/desmarca checkbox (ex.: PROFESSOR × event.host) →…
-    WebApp->>IAMController: PATCH /admin/perfis/:roleId/authorities (Bearer, iam.ma…
+    Admin->>WebApp: Marca/desmarca checkbox (ex.: PROFESSOR × event.host) → clica "Salvar"
+    WebApp->>IAMController: PATCH /admin/perfis/:roleId/authorities (Bearer, iam.manage_roles ✓)
     IAMController->>UpdateRoleAuthUC: execute(roleId, delta, operadorId)
     UpdateRoleAuthUC->>Postgres: BEGIN TX
     UpdateRoleAuthUC->>Postgres: INSERT/DELETE role_authority (delta add/remove)
-    UpdateRoleAuthUC->>Postgres: INSERT audit_log {acao='UPDATE_ROLE_AUTHORITIES', opera…
+    UpdateRoleAuthUC->>Postgres: INSERT audit_log {acao='UPDATE_ROLE_AUTHORITIES', operadorId, roleId, delta}
     UpdateRoleAuthUC->>Postgres: COMMIT
     UpdateRoleAuthUC->>CapabilityCache: invalidate(usersWithRole=roleId)
     CapabilityCache-->>UpdateRoleAuthUC: ok
     UpdateRoleAuthUC-->>IAMController: RoleDto {authorities updated} + _links
     IAMController-->>WebApp: 200 {roleId, authorities: [...], _links}
-    WebApp-->>Admin: Checkbox salvo; próximas requisições recalculam capabil…
+    WebApp-->>Admin: Checkbox salvo; próximas requisições recalculam capabilities
 ```
 
 **Notas:**
@@ -215,18 +215,18 @@ sequenceDiagram
     Admin->>WebApp: Clica "Gerenciar roles" (link manage-roles de F7.1)
     WebApp->>IAMController: GET /users/:id/roles (Bearer, iam.manage_roles ✓)
     IAMController-->>WebApp: 200 {userId, roles: [SECRETARIA, membro_caaf]}
-    Admin->>WebApp: Edita seleção (add membro_caaf, remove SECRETARIA) → co…
+    Admin->>WebApp: Edita seleção (add membro_caaf, remove SECRETARIA) → confirma
     WebApp->>IAMController: PUT /users/:id/roles (Bearer) {roleIds: [...]}
     IAMController->>AssignRolesUC: execute(userId, roleIds, operadorId)
     AssignRolesUC->>Postgres: BEGIN TX
     AssignRolesUC->>Postgres: REPLACE user_roles SET roleIds
-    AssignRolesUC->>Postgres: INSERT audit_log {acao='ASSIGN_ROLES', operadorId, targ…
+    AssignRolesUC->>Postgres: INSERT audit_log {acao='ASSIGN_ROLES', operadorId, targetUserId, delta}
     AssignRolesUC->>Postgres: COMMIT
     AssignRolesUC->>CapabilityCache: invalidate(userId)
     CapabilityCache-->>AssignRolesUC: ok
     AssignRolesUC-->>IAMController: UserRolesDto + _links
     IAMController-->>WebApp: 200 {userId, roles: [...], _links}
-    WebApp-->>Admin: Modal fecha; capabilities do usuário recalculadas no pr…
+    WebApp-->>Admin: Modal fecha; capabilities do usuário recalculadas no próximo login
 ```
 
 **Notas:**
@@ -262,7 +262,7 @@ sequenceDiagram
     Postgres-->>DeleteRoleUC: 3 (usuários bloqueantes)
     DeleteRoleUC-->>IAMController: 422 UnprocessableEntity (role_in_use)
     IAMController-->>WebApp: 422 Problem Details (role_in_use, blockerCount=3)
-    WebApp-->>Admin: AlertBanner "Perfil em uso por 3 usuários — remova ante…
+    WebApp-->>Admin: AlertBanner "Perfil em uso por 3 usuários — remova antes de excluir"
 ```
 
 **Notas:**

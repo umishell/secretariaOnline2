@@ -69,7 +69,7 @@ sequenceDiagram
     ActuatorService-->>SystemHealthUC: {p95=240ms, outboxPending=3, errors5xx=0, uptime=99.9%}
     SystemHealthUC-->>HealthController: SystemHealthDto {kpis, slaViolations[]}
     HealthController-->>WebApp: 200 {…}
-    WebApp-->>Admin: 4 KpiCards; cores semânticas por SLA; polling ativo a c…
+    WebApp-->>Admin: 4 KpiCards; cores semânticas por SLA; polling ativo a cada 30s
 ```
 
 **Notas:**

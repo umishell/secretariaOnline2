@@ -52,11 +52,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant Postgres
@@ -66,10 +66,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /formative-entries?canReview=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.review ✓
     JwtFilter->>FormativeController: repassa (professorId, cursoIds[])
-    FormativeController->>Postgres: SELECT formative_entries WHERE estado=SUBMETIDA AND cur…
-    Postgres-->>FormativeController: Page{aluno, atividade, horasDeclaradas, tipo, estado, d…
+    FormativeController->>Postgres: SELECT formative_entries WHERE estado=SUBMETIDA AND cursoId IN cursoIds[]
+    Postgres-->>FormativeController: Page{aluno, atividade, horasDeclaradas, tipo, estado, dataSubmissao}
     FormativeController-->>WebApp: 200 Page{items, _links: [batch-approve?]}
-    WebApp-->>Professor: DS/DataTable (checkbox se tipo=EVENTO_INTERNO + "Revisa…
+    WebApp-->>Professor: DS/DataTable (checkbox se tipo=EVENTO_INTERNO + "Revisar em lote")
 ```
 
 **Notas:**
@@ -89,26 +89,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant ApproveUC as ApproveFormativeUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: informa horasValidadas + clica "Aprovar" (_links.aprova…
-    WebApp->>JwtFilter: POST /formative-entries/{id}/approve {horasValidadas: N…
+    Professor->>WebApp: informa horasValidadas + clica "Aprovar" (_links.aprovar ✓)
+    WebApp->>JwtFilter: POST /formative-entries/{id}/approve {horasValidadas: N} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.review ✓
     JwtFilter->>FormativeController: repassa (professorId)
     FormativeController->>ApproveUC: execute(entryId, horasValidadas, professorId)
     ApproveUC->>Postgres: BEGIN TX
-    ApproveUC->>Postgres: UPDATE formative_entry SET estado=APROVADA, horasValida…
-    ApproveUC->>Postgres: INSERT formative_event_log (APROVADA, horasValidadas, a…
-    ApproveUC->>Postgres: INSERT outbox_event (type=formativas.approved, {entryId…
+    ApproveUC->>Postgres: UPDATE formative_entry SET estado=APROVADA, horasValidadas=N
+    ApproveUC->>Postgres: INSERT formative_event_log (APROVADA, horasValidadas, actor_id=professorId)
+    ApproveUC->>Postgres: INSERT outbox_event (type=formativas.approved, {entryId, alunoId})
     ApproveUC->>Postgres: COMMIT
     ApproveUC-->>FormativeController: FormativeEntryDto (APROVADA)
     FormativeController-->>WebApp: 200 {estado: APROVADA, horasValidadas: N, _links: []}
@@ -134,26 +134,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant BatchApproveUC as BatchApproveUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: seleciona N itens + clica "Revisar em lote" + confirma …
+    Professor->>WebApp: seleciona N itens + clica "Revisar em lote" + confirma modal
     WebApp->>JwtFilter: POST /formative-entries/batch-approve {ids[]} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.review ✓
     JwtFilter->>FormativeController: repassa
     FormativeController->>BatchApproveUC: execute(ids[], professorId)
     BatchApproveUC->>Postgres: BEGIN TX
-    BatchApproveUC->>Postgres: UPDATE formative_entries (N) SET estado=APROVADA WHERE …
-    BatchApproveUC->>Postgres: INSERT formative_event_log N linhas (APROVADA, actor_id…
-    BatchApproveUC->>Postgres: INSERT outbox_event N linhas (type=formativas.approved,…
+    BatchApproveUC->>Postgres: UPDATE formative_entries (N) SET estado=APROVADA WHERE id IN ids[]
+    BatchApproveUC->>Postgres: INSERT formative_event_log N linhas (APROVADA, actor_id=professorId)
+    BatchApproveUC->>Postgres: INSERT outbox_event N linhas (type=formativas.approved, {entryId} each)
     BatchApproveUC->>Postgres: COMMIT
     BatchApproveUC-->>FormativeController: BatchResult{aprovadas: N, erros: 0}
     FormativeController-->>WebApp: 200 {aprovadas: N, erros: 0}
@@ -178,26 +178,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant RejectUC as RejectFormativeUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: preenche parecer (≥20 chars) + clica "Rejeitar" (_links…
-    WebApp->>JwtFilter: POST /formative-entries/{id}/reject {parecer: "..."} (B…
+    Professor->>WebApp: preenche parecer (≥20 chars) + clica "Rejeitar" (_links.rejeitar ✓)
+    WebApp->>JwtFilter: POST /formative-entries/{id}/reject {parecer: "..."} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.review ✓
     JwtFilter->>FormativeController: repassa
     FormativeController->>RejectUC: execute(entryId, parecer, professorId)
     RejectUC->>Postgres: BEGIN TX
     RejectUC->>Postgres: UPDATE formative_entry SET estado=REJEITADA
     RejectUC->>Postgres: INSERT formative_event_log (REJEITADA, parecer, actor_id)
-    RejectUC->>Postgres: INSERT outbox_event (type=formativas.rejected, {entryId…
+    RejectUC->>Postgres: INSERT outbox_event (type=formativas.rejected, {entryId, parecer})
     RejectUC->>Postgres: COMMIT
     RejectUC-->>FormativeController: FormativeEntryDto (REJEITADA)
     FormativeController-->>WebApp: 200 {estado: REJEITADA, _links: []}
@@ -222,11 +222,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
     end
@@ -234,8 +234,8 @@ sequenceDiagram
     Professor->>WebApp: acessa /formativas?to=me (sem formative.review)
     WebApp->>JwtFilter: GET /formative-entries?canReview=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.review ✗ (authority ausente)
-    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: formative…
-    WebApp-->>Professor: redirecionamento para /inicio (item de menu não exibido…
+    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: formative.review)
+    WebApp-->>Professor: redirecionamento para /inicio (item de menu não exibido para não-CAAF)
 ```
 
 **Notas:**

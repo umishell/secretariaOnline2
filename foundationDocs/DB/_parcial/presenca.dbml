@@ -1,0 +1,57 @@
+// ============================================================
+// M8 — Presença v4.1 (2 tabelas)
+// Fonte: §5.3 analise_arquitetural + endpoints_canonicos_presenca_eventos_v4.md
+// Decisões aplicadas: I1 (attendance_session, não checkin),
+//                     I4 (device_uuid é coluna, não entidade),
+//                     I10 (seguir v4.1 + §5.3)
+// ============================================================
+
+Table event_attendance {
+  id                 uuid          [pk, not null]
+  titulo             varchar(200)  [not null]
+  id_curso           uuid          [ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico; null = multi-curso']
+  organizador        uuid          [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; event.manage']
+  ini_em             timestamptz   [not null, note: 'scheduledStart — agenda do evento']
+  fim_em             timestamptz   [not null, note: 'scheduledEnd — agenda do evento']
+  ch_creditadas      numeric(5,2)  [not null, note: 'horas formativas creditadas na conclusão']
+  attendance_mode    varchar(30)   [not null, note: 'QR_SINGLE | QR_DUAL | SECRET_SINGLE | SECRET_DUAL']
+  validation_windows jsonb         [note: 'decisão I4.2: JSONB canônico — não normalizado em tabela filha']
+  estado             varchar(30)   [not null, default: 'AGENDADO', note: 'AGENDADO | EM_ANDAMENTO | CONCLUIDO']
+  pin_entrada_hash   varchar(128)  [note: 'hash do PIN de entrada (modos SECRET_*)']
+  pin_saida_hash     varchar(128)  [note: 'hash do PIN de saída (modos SECRET_DUAL)']
+  janela_entrada_ini timestamptz   [note: 'abertura efetiva da janela de entrada']
+  janela_entrada_fim timestamptz
+  janela_saida_ini   timestamptz   [note: 'modos DUAL']
+  janela_saida_fim   timestamptz
+}
+
+// Decisão I1 / I4: attendance_session (não checkin); device_uuid é coluna
+// UNIQUE (id_evento, id_aluno): um aluno, uma sessão por evento
+// UNIQUE (id_evento, device_uuid): device binding anti-compartilhamento
+Table attendance_session {
+  id          uuid        [pk, not null]
+  id_evento   uuid        [not null, ref: > event_attendance.id, note: 'CASCADE']
+  id_aluno    uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  device_uuid uuid        [not null, note: 'binding por dispositivo — UNIQUE com id_evento']
+  entrada_em  timestamptz [note: 'timestamp da confirmação de entrada']
+  saida_em    timestamptz [note: 'timestamp da confirmação de saída (modos DUAL)']
+  estado      varchar(40) [not null, note: 'AGUARDANDO_ENTRADA | ENTRADA_OK | DESCLASSIFICADO_FASE1 | AGUARDANDO_SAIDA | PRESENCA_COMPLETA_EFETIVADA']
+  created_at  timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (id_evento, id_aluno)    [unique, note: 'um aluno, uma sessão por evento']
+    (id_evento, device_uuid) [unique, note: 'device binding — anti-compartilhamento']
+  }
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M8
+// ============================================================
+// event_attendance.id_curso     →  curso.id    (M2 Acadêmico)
+// event_attendance.organizador  →  usuario.id  (M1 IAM)
+// attendance_session.id_aluno   →  usuario.id  (M1 IAM)
+// ============================================================
+// FKs cross-módulo recebidas
+// ============================================================
+// M9  certificate.id_evento  →  event_attendance.id
+// ============================================================

@@ -48,11 +48,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CertificateController
         participant Postgres
@@ -62,10 +62,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /certificates?beneficiario=me&tipo=:t&ano=:a (Bearer)
     JwtFilter->>JwtFilter: valida JWT + certificate.view_own ✓
     JwtFilter->>CertificateController: repassa (alunoId, filtros)
-    CertificateController->>Postgres: SELECT certificate WHERE aluno_id=:alunoId AND tipo LIK…
-    Postgres-->>CertificateController: [{id, tipo, referenciaDescricao, emitido_em, _links.dow…
+    CertificateController->>Postgres: SELECT certificate WHERE aluno_id=:alunoId AND tipo LIKE :tipo AND EXTRACT(YEAR FROM emitido_em)=:ano
+    Postgres-->>CertificateController: [{id, tipo, referenciaDescricao, emitido_em, _links.download?}]
     CertificateController-->>WebApp: 200 {certificates: [...]}
-    WebApp-->>Aluno: tabela (Tipo, Evento/Atividade, Data emissão, botão Dow…
+    WebApp-->>Aluno: tabela (Tipo, Evento/Atividade, Data emissão, botão Download por item via useActions)
 ```
 
 **Notas:**
@@ -87,26 +87,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant CertificateController
     end
-    box rgba(230,255,230,0.3) Storage
+    box #f4f4f4 Storage
         participant MinIO
     end
 
     Aluno->>WebApp: clica "Download" (certificateId via _links.download)
     WebApp->>JwtFilter: GET /certificates/{id}/download-url (Bearer)
-    JwtFilter->>JwtFilter: valida JWT + certificate.view_own ✓ + certificate.aluno…
+    JwtFilter->>JwtFilter: valida JWT + certificate.view_own ✓ + certificate.aluno_id = alunoId ✓
     JwtFilter->>CertificateController: repassa (alunoId, certificateId)
     CertificateController->>MinIO: presignedGetUrl(fileKey, expiresIn: 900s)
     MinIO-->>CertificateController: {downloadUrl, expiresAt}
     CertificateController-->>WebApp: 200 {downloadUrl, expiresAt}
-    WebApp-->>Aluno: browser abre downloadUrl em nova aba → PDF baixado (con…
+    WebApp-->>Aluno: browser abre downloadUrl em nova aba → PDF baixado (content-disposition: attachment)
 ```
 
 **Notas:**
@@ -128,25 +128,25 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(240,240,255,0.3) Scheduled
+    box #f4f4f4 Scheduled
         participant OutboxScheduler
         participant CertificateIssuerUseCase
     end
-    box rgba(255,245,230,0.3) Persistence
+    box #f4f4f4 Persistence
         participant Postgres
         participant MinIO
     end
-    box rgba(240,255,240,0.3) Notification
+    box #f4f4f4 Notification
         participant NotificacaoDispatcher
     end
 
-    OutboxScheduler->>Postgres: SELECT outbox_event WHERE type IN ('presenca.confirmed'…
+    OutboxScheduler->>Postgres: SELECT outbox_event WHERE type IN ('presenca.confirmed','formativa.approved') AND status=PENDING LIMIT 50
     Postgres-->>OutboxScheduler: [{id, type, payload: {alunoId, referenciaId, tipo}}]
     OutboxScheduler->>CertificateIssuerUseCase: issue(alunoId, referenciaId, tipo)
-    CertificateIssuerUseCase->>CertificateIssuerUseCase: gerar PDF (dados+QR Code) + SHA-256(pdf) + ED25519.sign…
+    CertificateIssuerUseCase->>CertificateIssuerUseCase: gerar PDF (dados+QR Code) + SHA-256(pdf) + ED25519.sign(hash) em memória
     CertificateIssuerUseCase->>MinIO: PUT certificado_{hash}.pdf (upload via SDK interno)
     MinIO-->>CertificateIssuerUseCase: {fileKey, etag}
-    CertificateIssuerUseCase->>Postgres: BEGIN; INSERT certificate {alunoId, tipo, referenciaId,…
+    CertificateIssuerUseCase->>Postgres: BEGIN; INSERT certificate {alunoId, tipo, referenciaId, hash, signature, fileKey} + INSERT outbox_event(certificate.issued) + COMMIT
     OutboxScheduler->>NotificacaoDispatcher: dispatch(certificado.emitido, alunoId, tipo)
     NotificacaoDispatcher->>Postgres: INSERT notificacao_in_app + enqueue push FCM (async)
     NotificacaoDispatcher-->>OutboxScheduler: enviado

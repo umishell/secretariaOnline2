@@ -65,11 +65,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestsController
         participant Postgres
@@ -79,10 +79,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /requests?solicitante=me&page=0&size=20 (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.view_own ✓
     JwtFilter->>RequestsController: repassa (alunoId, filtros, pageable)
-    RequestsController->>Postgres: SELECT request WHERE solicitante_id=:alunoId ORDER BY c…
+    RequestsController->>Postgres: SELECT request WHERE solicitante_id=:alunoId ORDER BY created_at DESC LIMIT 20
     Postgres-->>RequestsController: Page<{id, numero, tipo, estado, prazo_em}>
     RequestsController-->>WebApp: 200 Page {content, totalPages, _links.novaSolicitacao?}
-    WebApp->>WebApp: useActions(_links) → botão "Nova solicitação" apenas se…
+    WebApp->>WebApp: useActions(_links) → botão "Nova solicitação" apenas se _links.novaSolicitacao presente
     WebApp-->>Aluno: DS/DataTable (estado DS/Badge, prazo em danger se vencido)
 ```
 
@@ -104,11 +104,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestTypesController
         participant Postgres
@@ -118,7 +118,7 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /request-types?cursoId=:id&periodo=:p (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.open ✓
     JwtFilter->>RequestTypesController: repassa (alunoId, cursoId, periodo)
-    RequestTypesController->>Postgres: SELECT request_type WHERE prerequisitos satisfeitos AND…
+    RequestTypesController->>Postgres: SELECT request_type WHERE prerequisitos satisfeitos AND curso_id=:cursoId AND ativo=true
     Postgres-->>RequestTypesController: [{code, nome, descricao, form_schema, prazo_dias}]
     RequestTypesController-->>WebApp: 200 {requestTypes: [...]} (somente tipos elegíveis)
     WebApp-->>Aluno: Passo 1 — grid de cards com tipos disponíveis para seleção
@@ -141,26 +141,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant AttachmentController
         participant MinIO
     end
 
-    Aluno->>WebApp: arrasta PDF (5MB, tipo válido) → SHA-256 calculado loca…
-    WebApp->>JwtFilter: POST /requests/attachments/presigned-url {filename, con…
+    Aluno->>WebApp: arrasta PDF (5MB, tipo válido) → SHA-256 calculado localmente ✓)
+    WebApp->>JwtFilter: POST /requests/attachments/presigned-url {filename, contentType, sha256, sizeBytes} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.open ✓
     JwtFilter->>AttachmentController: repassa (alunoId, sha256, contentType)
-    AttachmentController->>MinIO: gera presigned PUT URL (key=sha256, bucket=attachments,…
+    AttachmentController->>MinIO: gera presigned PUT URL (key=sha256, bucket=attachments, TTL=5min)
     MinIO-->>AttachmentController: presignedUrl + fileKey
     AttachmentController-->>WebApp: 200 {presignedUrl, fileKey}
-    WebApp->>MinIO: PUT presignedUrl (file bytes, Content-Type: application…
+    WebApp->>MinIO: PUT presignedUrl (file bytes, Content-Type: application/pdf)
     MinIO-->>WebApp: 200 (objeto persistido em attachments/)
-    WebApp-->>Aluno: anexo listado + barra de progresso concluída (fileKey s…
+    WebApp-->>Aluno: anexo listado + barra de progresso concluída (fileKey salvo no wizard state)
 ```
 
 **Notas:**
@@ -181,11 +181,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant OpenRequestController
         participant OpenRequestUseCase
@@ -193,15 +193,15 @@ sequenceDiagram
     end
 
     Aluno->>WebApp: clica "Confirmar" no Passo 3 (revisão ok)
-    WebApp->>JwtFilter: POST /requests {requestTypeCode, dados: {...}, attachme…
+    WebApp->>JwtFilter: POST /requests {requestTypeCode, dados: {...}, attachmentKeys: [...]} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.open ✓
     JwtFilter->>OpenRequestController: repassa (alunoId, requestTypeCode, dados, attachmentKeys)
     OpenRequestController->>OpenRequestUseCase: execute(cmd)
-    OpenRequestUseCase->>Postgres: BEGIN; SELECT request_type (form_schema, prazo_dias, wo…
-    OpenRequestUseCase->>Postgres: INSERT request {estado=workflow.initial, dados=:json, p…
-    OpenRequestUseCase->>Postgres: INSERT outbox_event(solicitacoes.opened, requestId, alu…
+    OpenRequestUseCase->>Postgres: BEGIN; SELECT request_type (form_schema, prazo_dias, workflow_json)
+    OpenRequestUseCase->>Postgres: INSERT request {estado=workflow.initial, dados=:json, prazo_em, solicitante_id=:alunoId)
+    OpenRequestUseCase->>Postgres: INSERT outbox_event(solicitacoes.opened, requestId, alunoId, cursoId)
     OpenRequestController-->>WebApp: 201 Created {id, numero_anual, _links}
-    WebApp-->>Aluno: redireciona para /solicitacoes/:id + DS/Toast "Solicita…
+    WebApp-->>Aluno: redireciona para /solicitacoes/:id + DS/Toast "Solicitação aberta com sucesso."
 ```
 
 **Notas:**
@@ -222,21 +222,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant OpenRequestController
         participant Postgres
     end
 
     Aluno->>WebApp: sai do Passo 2 / fecha aba (beforeunload event)
-    WebApp->>JwtFilter: POST /requests/draft {requestTypeCode, dados: {...parci…
+    WebApp->>JwtFilter: POST /requests/draft {requestTypeCode, dados: {...parcial}} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.open ✓
     JwtFilter->>OpenRequestController: repassa (alunoId, dados parciais)
-    OpenRequestController->>Postgres: INSERT/UPDATE request {estado=RASCUNHO, dados=:json, up…
+    OpenRequestController->>Postgres: INSERT/UPDATE request {estado=RASCUNHO, dados=:json, updated_at=now())
     OpenRequestController-->>WebApp: 200 {draftId, _links}
 ```
 
@@ -258,11 +258,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestsController
         participant Postgres
@@ -272,11 +272,11 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /requests/{id} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.view_own ✓ + solicitante_id = alunoId
     JwtFilter->>RequestsController: repassa (alunoId, requestId)
-    RequestsController->>Postgres: SELECT request + request_event ORDER BY created_at DESC…
-    Postgres-->>RequestsController: {request, events: [{tipo, data, texto}], attachments: […
+    RequestsController->>Postgres: SELECT request + request_event ORDER BY created_at DESC WHERE id=:id
+    Postgres-->>RequestsController: {request, events: [{tipo, data, texto}], attachments: [{fileKey, nome, tipo}]}
     RequestsController-->>WebApp: 200 {…}
-    WebApp->>WebApp: useActions(_links) → ActionBar com exatamente os botões…
-    WebApp-->>Aluno: detalhe + ActionBar HATEOAS + timeline reversa + DS/Att…
+    WebApp->>WebApp: useActions(_links) → ActionBar com exatamente os botões permitidos pelo estado
+    WebApp-->>Aluno: detalhe + ActionBar HATEOAS + timeline reversa + DS/AttachmentList anexos)
 ```
 
 **Notas:**
@@ -297,11 +297,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ProtocolUseCase
         participant Postgres
@@ -314,9 +314,9 @@ sequenceDiagram
     JwtFilter->>ProtocolUseCase: repassa (alunoId, requestId)
     ProtocolUseCase->>Postgres: SELECT request + request_events (dados completos para PDF)
     Postgres-->>ProtocolUseCase: {request completo}
-    ProtocolUseCase->>MinIO: PUT protocol_{requestId}.pdf (PDF canônico com QR /publ…
+    ProtocolUseCase->>MinIO: PUT protocol_{requestId}.pdf (PDF canônico com QR /publico/verificar-protocolo/:id)
     MinIO-->>ProtocolUseCase: fileKey
-    ProtocolUseCase->>Postgres: INSERT protocol {requestId, fileKey, gerado_em=now()} +…
+    ProtocolUseCase->>Postgres: INSERT protocol {requestId, fileKey, gerado_em=now()} + COMMIT
     ProtocolUseCase-->>WebApp: 200 {downloadUrl} (presigned GET MinIO, TTL=15min)
     WebApp-->>Aluno: browser inicia download do PDF
 ```
@@ -339,19 +339,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant AttachmentController
         participant MinIO
     end
 
     Aluno->>WebApp: clica "Baixar" no anexo (DS/AttachmentList)
-    WebApp->>JwtFilter: GET /requests/{id}/attachments/{attachId}/download-url …
-    JwtFilter->>JwtFilter: valida JWT + request.view_own ✓ + owner check (solicita…
+    WebApp->>JwtFilter: GET /requests/{id}/attachments/{attachId}/download-url (Bearer)
+    JwtFilter->>JwtFilter: valida JWT + request.view_own ✓ + owner check (solicitante_id = alunoId ✓)
     JwtFilter->>AttachmentController: repassa (alunoId, requestId, attachId)
     AttachmentController->>MinIO: gera presigned GET URL (key=fileKey, TTL=15min)
     MinIO-->>AttachmentController: presignedUrl

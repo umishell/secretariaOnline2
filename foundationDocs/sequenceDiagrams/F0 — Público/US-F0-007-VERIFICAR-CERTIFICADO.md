@@ -53,12 +53,12 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
         participant Crypto as Web Crypto API
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as CertificadoController
         participant UC as VerificarCertificadoUseCase
         participant DB as Postgres
@@ -68,8 +68,8 @@ sequenceDiagram
     WebApp->>AC: GET /publico/certificados/{hash}/verificacao (sem auth)
     AC->>UC: execute(VerifyCertQuery)
     UC->>DB: SELECT certificate BY hashSha256
-    DB-->>UC: CertificateEntity (status=VALIDO, assinaturaEd25519, me…
-    UC-->>AC: CertificadoVerificacaoDto (beneficiarioNome parcial, at…
+    DB-->>UC: CertificateEntity (status=VALIDO, assinaturaEd25519, metadata)
+    UC-->>AC: CertificadoVerificacaoDto (beneficiarioNome parcial, atividade, jwksUrl)
     AC-->>WebApp: 200 {…}
     WebApp->>AC: GET /.well-known/jwks.json
     AC-->>WebApp: 200 {keys: [{kty:OKP, crv:Ed25519, x:pubKey}]}
@@ -98,12 +98,12 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
         participant Crypto as Web Crypto API
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as CertificadoController
         participant UC as VerificarCertificadoUseCase
         participant DB as Postgres
@@ -113,8 +113,8 @@ sequenceDiagram
     WebApp->>AC: GET /publico/certificados/{hash}/verificacao (sem auth)
     AC->>UC: execute(VerifyCertQuery)
     UC->>DB: SELECT certificate BY hashSha256
-    DB-->>UC: CertificateEntity (status=REVOGADO, motivoRevogacao, me…
-    UC-->>AC: CertificadoVerificacaoDto (status=REVOGADO, motivoRevog…
+    DB-->>UC: CertificateEntity (status=REVOGADO, motivoRevogacao, metadata)
+    UC-->>AC: CertificadoVerificacaoDto (status=REVOGADO, motivoRevogacao)
     AC-->>WebApp: 200 {…}
     WebApp->>AC: GET /.well-known/jwks.json
     AC-->>WebApp: 200 {keys: [{kty:OKP, crv:Ed25519, x:pubKey}]}
@@ -141,11 +141,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as CertificadoController
         participant UC as VerificarCertificadoUseCase
         participant DB as Postgres
@@ -158,7 +158,7 @@ sequenceDiagram
     DB-->>UC: null (não encontrado)
     UC-->>AC: CertificadoNotFoundException
     AC-->>WebApp: 404 Problem Details (not-found)
-    WebApp-->>Verificador: DS/VerificationSeal danger (Certificado inválido — sem …
+    WebApp-->>Verificador: DS/VerificationSeal danger (Certificado inválido — sem metadados)
 ```
 
 **Notas:**
@@ -178,12 +178,12 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
         participant Crypto as Web Crypto API
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as CertificadoController
         participant UC as VerificarCertificadoUseCase
         participant DB as Postgres
@@ -198,9 +198,9 @@ sequenceDiagram
     AC-->>WebApp: 200 {hashSha256, assinaturaEd25519:FORJADA, jwksUrl}
     WebApp->>AC: GET /.well-known/jwks.json
     AC-->>WebApp: 200 {keys: [{kty:OKP, crv:Ed25519, x:pubKey legítima}]}
-    WebApp->>Crypto: SubtleCrypto.verify('Ed25519', pubKey, assinaturaForjad…
+    WebApp->>Crypto: SubtleCrypto.verify('Ed25519', pubKey, assinaturaForjada, hash)
     Crypto-->>WebApp: false (assinatura inválida)
-    WebApp-->>Verificador: DS/VerificationSeal danger (Certificado inválido — adul…
+    WebApp-->>Verificador: DS/VerificationSeal danger (Certificado inválido — adulteração)
 ```
 
 **Notas:**

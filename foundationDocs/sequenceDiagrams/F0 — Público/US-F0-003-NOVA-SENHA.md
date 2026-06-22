@@ -50,11 +50,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as ResetPasswordUseCase
         participant DB as Postgres
@@ -66,7 +66,7 @@ sequenceDiagram
     UC->>DB: SELECT jti_blacklist + usuario BY jti + sub (JWT verified)
     DB-->>UC: vazio + UsuarioEntity (passwordHistory, userId)
     UC->>DB: BEGIN TX
-    UC->>DB: UPDATE usuario SET senha_hash=Argon2id(novaSenha), senh…
+    UC->>DB: UPDATE usuario SET senha_hash=Argon2id(novaSenha), senha_alterada=true
     UC->>DB: DELETE refresh_tokens WHERE userId (revoga sessões)
     UC->>DB: INSERT iam_jti_blacklist (JTI, exp)
     UC->>DB: INSERT audit_log (iam.password_reset_completed, IP, JTI)
@@ -97,18 +97,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as ResetPasswordUseCase
         participant DB as Postgres
     end
 
     Usuario->>WebApp: Submit {novaSenha, confirmarSenha}
-    WebApp->>AC: POST /auth/reset-password {token inválido/expirado/cons…
+    WebApp->>AC: POST /auth/reset-password {token inválido/expirado/consumido}
     AC->>UC: execute(ResetPasswordCommand)
     UC->>DB: SELECT jti_blacklist WHERE jti (pós JWT verify)
     DB-->>UC: JTI presente (token já consumido)
@@ -135,11 +135,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as ResetPasswordUseCase
         participant DB as Postgres
@@ -150,7 +150,7 @@ sequenceDiagram
     AC->>UC: execute(ResetPasswordCommand)
     UC->>DB: SELECT jti_blacklist + usuario BY jti + sub (JWT verified)
     DB-->>UC: vazio + UsuarioEntity (passwordHistory[3])
-    UC->>UC: Argon2id.compare(novaSenha, histórico) → MATCH (senha r…
+    UC->>UC: Argon2id.compare(novaSenha, histórico) → MATCH (senha reutilizada)
     UC-->>AC: PasswordReuseException
     AC-->>WebApp: 422 Problem Details (password-reuse)
     WebApp-->>Usuario: DS/AlertBanner danger + campo novaSenha limpo

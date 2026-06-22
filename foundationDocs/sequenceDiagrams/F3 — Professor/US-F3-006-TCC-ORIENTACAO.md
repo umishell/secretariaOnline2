@@ -54,11 +54,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
         participant Postgres
@@ -68,7 +68,7 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /tccs?canReview=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + tcc.supervise ✓
     JwtFilter->>TccController: repassa (professorId)
-    TccController->>Postgres: SELECT tccs WHERE orientadorId=professorId OR banca_mem…
+    TccController->>Postgres: SELECT tccs WHERE orientadorId=professorId OR banca_membroId=professorId
     Postgres-->>TccController: Page{aluno, titulo, papel, situacao}
     TccController-->>WebApp: 200 Page{items, _links}
     WebApp-->>Professor: DS/DataTable (Aluno, Título, Papel, Situação)
@@ -91,26 +91,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
         participant ReviewTccUC as ReviewTccUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: informa nota=8.5 + parecer + clica "Registrar avaliação…
-    WebApp->>JwtFilter: POST /tccs/{id}/review {nota: 8.5, parecer: "..."} (Bea…
+    Professor->>WebApp: informa nota=8.5 + parecer + clica "Registrar avaliação" (_links.avaliar ✓)
+    WebApp->>JwtFilter: POST /tccs/{id}/review {nota: 8.5, parecer: "..."} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + tcc.supervise ✓
     JwtFilter->>TccController: repassa (professorId)
     TccController->>ReviewTccUC: execute(tccId, nota, parecer, professorId)
     ReviewTccUC->>Postgres: BEGIN TX
     ReviewTccUC->>Postgres: INSERT tcc_evaluation (nota, parecer, situacao, actor_id)
-    ReviewTccUC->>Postgres: UPDATE tcc SET situacao=APROVADO (nota >= nota_minima c…
-    ReviewTccUC->>Postgres: INSERT outbox_event (type=tcc.reviewed, {tccId, alunoId…
+    ReviewTccUC->>Postgres: UPDATE tcc SET situacao=APROVADO (nota >= nota_minima curso)
+    ReviewTccUC->>Postgres: INSERT outbox_event (type=tcc.reviewed, {tccId, alunoId, situacao})
     ReviewTccUC->>Postgres: COMMIT
     ReviewTccUC-->>TccController: TccDto (APROVADO)
     TccController-->>WebApp: 200 {situacao: APROVADO, _links: []}
@@ -135,11 +135,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
         participant MinIO
@@ -172,11 +172,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant TccController
     end
@@ -184,8 +184,8 @@ sequenceDiagram
     Professor->>WebApp: acessa /tccs?to=me (sem tcc.supervise)
     WebApp->>JwtFilter: GET /tccs?canReview=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + tcc.supervise ✗ (authority ausente)
-    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: tcc.super…
-    WebApp-->>Professor: redirecionamento para /inicio (menu não exibido para nã…
+    JwtFilter-->>WebApp: 403 Problem Details (access_denied, required: tcc.supervise)
+    WebApp-->>Professor: redirecionamento para /inicio (menu não exibido para não-vinculado)
 ```
 
 **Notas:**

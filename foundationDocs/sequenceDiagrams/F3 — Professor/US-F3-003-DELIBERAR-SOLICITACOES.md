@@ -56,11 +56,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
@@ -70,7 +70,7 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /requests?canDeliberate=true (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.deliberate ✓
     JwtFilter->>RequestController: repassa (professorId)
-    RequestController->>Postgres: SELECT requests WHERE canDeliberate=true AND deliberato…
+    RequestController->>Postgres: SELECT requests WHERE canDeliberate=true AND deliberatorId=professorId
     Postgres-->>RequestController: Page{numero, aluno, tipo, prazo_em, sla}
     RequestController-->>WebApp: 200 Page{items, _links: [filtros]}
     WebApp-->>Professor: DS/DataTable (prazo danger se prazo_em < now)
@@ -94,11 +94,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant DeliberateUC as DeliberateRequestUseCase
@@ -112,7 +112,7 @@ sequenceDiagram
     RequestController->>DeliberateUC: execute(requestId, DEFER, parecer, professorId)
     DeliberateUC->>Postgres: BEGIN TX
     DeliberateUC->>Postgres: UPDATE request SET estado=DEFERIDA
-    DeliberateUC->>Postgres: INSERT request_event + audit_log (DEFERIDA, parecer, ac…
+    DeliberateUC->>Postgres: INSERT request_event + audit_log (DEFERIDA, parecer, actor_id)
     DeliberateUC->>Postgres: INSERT outbox_event (type=solicitacoes.deliberated)
     DeliberateUC->>Postgres: COMMIT
     DeliberateUC-->>RequestController: RequestDto (DEFERIDA)
@@ -140,31 +140,31 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
-    Professor->>WebApp: clica link do e-mail (/solicitacoes/:id/deliberar ?toke…
-    WebApp->>WebApp: detecta ausência de sessão → modo preview (sem chamada …
-    WebApp-->>Professor: tela preview read-only + DS/AlertBanner info "Faça logi…
-    Professor->>WebApp: clica "Fazer login" → /login?returnUrl=/solicitacoes/:i…
-    WebApp-->>Professor: fluxo login F0.1 (access token + refresh emitidos; ver …
-    Professor->>WebApp: retorna para /solicitacoes/:id/deliberar?token=JWT (ses…
+    Professor->>WebApp: clica link do e-mail (/solicitacoes/:id/deliberar?token=JWT)
+    WebApp->>WebApp: detecta ausência de sessão → modo preview (sem chamada autenticada)
+    WebApp-->>Professor: tela preview read-only + DS/AlertBanner info "Faça login para deliberar esta solicitação."
+    Professor->>WebApp: clica "Fazer login" → /login?returnUrl=/solicitacoes/:id/deliberar?token=JWT
+    WebApp-->>Professor: fluxo login F0.1 (access token + refresh emitidos; ver F0.1-a)
+    Professor->>WebApp: retorna para /solicitacoes/:id/deliberar?token=JWT (sessão ativa)
     WebApp->>JwtFilter: GET /requests/{id}?deepLinkToken=JWT (Bearer)
     JwtFilter->>JwtFilter: valida session JWT + request.deliberate ✓
     JwtFilter->>RequestController: repassa (professorId, deepLinkToken)
     RequestController->>Postgres: SELECT jti_blacklist WHERE jti=tokenJTI
-    Postgres-->>RequestController: NOT FOUND (token válido; audience=request-action, sub=p…
+    Postgres-->>RequestController: NOT FOUND (token válido; audience=request-action, sub=professorId)
     RequestController->>Postgres: SELECT request, workflow_state WHERE id=requestId
     Postgres-->>RequestController: RequestEntity + transições disponíveis
     RequestController-->>WebApp: 200 {…}
-    WebApp-->>Professor: formulário deliberação com ações disponíveis (F3.4-D02 …
+    WebApp-->>Professor: formulário deliberação com ações disponíveis (F3.4-D02 fluxo)
 ```
 
 **Notas:**
@@ -186,11 +186,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant ForwardUC as ForwardRequestUseCase
@@ -198,15 +198,15 @@ sequenceDiagram
     end
 
     Professor->>WebApp: seleciona destinatário + clica "Confirmar encaminhamento"
-    WebApp->>JwtFilter: POST /requests/{id}/transitions {FORWARD, targetUserId}…
+    WebApp->>JwtFilter: POST /requests/{id}/transitions {FORWARD, targetUserId} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.deliberate ✓
     JwtFilter->>RequestController: repassa
     RequestController->>ForwardUC: execute(requestId, FORWARD, targetUserId, professorId)
     ForwardUC->>Postgres: BEGIN TX
-    ForwardUC->>Postgres: UPDATE request SET deliberatorId=targetUserId, estado=E…
-    ForwardUC->>Postgres: INSERT request_event + audit_log (ENCAMINHADA, actor_id…
-    ForwardUC->>Postgres: INSERT deep_link_token (jti=UUID, sub=targetUserId, aud…
-    ForwardUC->>Postgres: INSERT outbox_event (type=solicitacoes.assigned_to_user…
+    ForwardUC->>Postgres: UPDATE request SET deliberatorId=targetUserId, estado=EM_DELIBERACAO
+    ForwardUC->>Postgres: INSERT request_event + audit_log (ENCAMINHADA, actor_id, targetUserId)
+    ForwardUC->>Postgres: INSERT deep_link_token (jti=UUID, sub=targetUserId, audience=request-action)
+    ForwardUC->>Postgres: INSERT outbox_event (type=solicitacoes.assigned_to_user, {requestId, targetUserId})
     ForwardUC->>Postgres: COMMIT
     ForwardUC-->>RequestController: RequestDto (EM_DELIBERACAO)
     RequestController-->>WebApp: 200 {estado: EM_DELIBERACAO, _links: []}
@@ -231,24 +231,24 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
-    Professor->>WebApp: acessa /solicitacoes/:id/deliberar?token=JWT (sessão at…
+    Professor->>WebApp: acessa /solicitacoes/:id/deliberar?token=JWT (sessão ativa)
     WebApp->>JwtFilter: GET /requests/{id}?deepLinkToken=JWT (Bearer)
     JwtFilter->>JwtFilter: valida session JWT + request.deliberate ✓
     JwtFilter->>RequestController: repassa (professorId, deepLinkToken)
     RequestController->>Postgres: SELECT jti_blacklist WHERE jti=tokenJTI
     Postgres-->>RequestController: FOUND (usedAt=timestamp — token já consumido)
     RequestController-->>WebApp: 401 Problem Details (token_already_used)
-    WebApp-->>Professor: DS/EmptyState "Este link já foi utilizado." + botão "Ir…
+    WebApp-->>Professor: DS/EmptyState "Este link já foi utilizado." + botão "Ir para a fila"
 ```
 
 **Notas:**
@@ -268,11 +268,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
@@ -282,10 +282,10 @@ sequenceDiagram
     WebApp->>JwtFilter: POST /requests/{id}/transitions {DEFER, parecer} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + request.deliberate ✓ (base ok)
     JwtFilter->>RequestController: repassa
-    RequestController->>Postgres: SELECT transition WHERE action=DEFER (requiresAuthority…
-    Postgres-->>RequestController: Transition(requiresAuthority=request.deliberate.tcc — a…
-    RequestController-->>WebApp: 422 Problem Details (guard_failed, missing: request.del…
-    WebApp-->>Professor: DS/AlertBanner danger "Você não tem permissão para esta…
+    RequestController->>Postgres: SELECT transition WHERE action=DEFER (requiresAuthority)
+    Postgres-->>RequestController: Transition(requiresAuthority=request.deliberate.tcc — ausente)
+    RequestController-->>WebApp: 422 Problem Details (guard_failed, missing: request.deliberate.tcc)
+    WebApp-->>Professor: DS/AlertBanner danger "Você não tem permissão para esta ação."
 ```
 
 **Notas:**

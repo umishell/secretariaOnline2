@@ -71,7 +71,7 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Acessa /admin/tipos-solicitacao
-    WebApp->>RTController: GET /request-types?status=&page=0 (Bearer, request_type…
+    WebApp->>RTController: GET /request-types?status=&page=0 (Bearer, request_type.manage ✓)
     RTController->>ListRTUC: execute(query, Pageable)
     ListRTUC->>Postgres: SELECT request_type {id, nome, status, version}
     Postgres-->>ListRTUC: Page<RequestTypeEntity>
@@ -80,11 +80,11 @@ sequenceDiagram
     Admin->>WebApp: Seleciona "Trancamento" no painel esquerdo
     WebApp->>RTController: GET /request-types/:id (Bearer, request_type.manage ✓)
     RTController->>GetRTUC: execute(id)
-    GetRTUC->>Postgres: SELECT request_type BY id (form_schema, workflow_json, …
+    GetRTUC->>Postgres: SELECT request_type BY id (form_schema, workflow_json, status, version)
     Postgres-->>GetRTUC: RequestTypeEntity
     GetRTUC-->>RTController: RequestTypeDto + _links
     RTController-->>WebApp: 200 {form_schema, workflow_json, status, version, _links}
-    WebApp-->>Admin: Três painéis carregados (lista · JSON editors · preview…
+    WebApp-->>Admin: Três painéis carregados (lista · JSON editors · preview FormSchema + WorkflowStateMachine)
 ```
 
 **Notas:**
@@ -113,11 +113,11 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Clica "Novo" → preenche nome e schemas iniciais
-    WebApp->>RTController: POST /request-types (Bearer, request_type.manage ✓) {no…
+    WebApp->>RTController: POST /request-types (Bearer, request_type.manage ✓) {nome, form_schema, workflow_json}
     RTController->>CreateRTUC: execute(CreateRequestTypeCommand)
     CreateRTUC->>CreateRTUC: validate(form_schema JSON Schema draft-07)
     CreateRTUC->>Postgres: BEGIN TX
-    CreateRTUC->>Postgres: INSERT request_type {nome, form_schema, workflow_json, …
+    CreateRTUC->>Postgres: INSERT request_type {nome, form_schema, workflow_json, status='DRAFT'}
     CreateRTUC->>Postgres: INSERT audit_log {acao='CREATE_REQUEST_TYPE', operadorId}
     CreateRTUC->>Postgres: COMMIT
     CreateRTUC-->>RTController: RequestTypeDto + _links
@@ -150,17 +150,17 @@ sequenceDiagram
     participant SaveDraftUC as SaveDraftUseCase
     participant Postgres
 
-    Admin->>WebApp: Edita form_schema / workflow_json → clica "Salvar rascu…
-    WebApp->>RTController: PATCH /request-types/:id (Bearer, request_type.manage ✓…
+    Admin->>WebApp: Edita form_schema / workflow_json → clica "Salvar rascunho"
+    WebApp->>RTController: PATCH /request-types/:id (Bearer, request_type.manage ✓) {form_schema, workflow_json}
     RTController->>SaveDraftUC: execute(id, delta, operadorId)
     SaveDraftUC->>SaveDraftUC: validate(form_schema JSON Schema draft-07)
     SaveDraftUC->>Postgres: BEGIN TX
-    SaveDraftUC->>Postgres: UPDATE request_type SET form_schema, workflow_json WHER…
+    SaveDraftUC->>Postgres: UPDATE request_type SET form_schema, workflow_json WHERE id=:id AND status='DRAFT'
     SaveDraftUC->>Postgres: INSERT audit_log {acao='SAVE_DRAFT', operadorId, payload}
     SaveDraftUC->>Postgres: COMMIT
     SaveDraftUC-->>RTController: RequestTypeDto + _links
     RTController-->>WebApp: 200 {form_schema, workflow_json, status='DRAFT', _links}
-    WebApp-->>Admin: Rascunho salvo; preview e grafo atualizados no painel d…
+    WebApp-->>Admin: Rascunho salvo; preview e grafo atualizados no painel direito
 ```
 
 **Notas:**
@@ -189,14 +189,14 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Schemas válidos → clica "Publicar"
-    WebApp->>RTController: POST /request-types/:id/publish (Bearer, request_type.m…
+    WebApp->>RTController: POST /request-types/:id/publish (Bearer, request_type.manage ✓)
     RTController->>PublishRTUC: execute(id, operadorId)
-    PublishRTUC->>Postgres: SELECT request_type BY id (status, form_schema, workflo…
+    PublishRTUC->>Postgres: SELECT request_type BY id (status, form_schema, workflow_json)
     Postgres-->>PublishRTUC: RequestTypeEntity {status='DRAFT', version=N}
     PublishRTUC->>PublishRTUC: validate(form_schema + workflow_json)
     PublishRTUC->>Postgres: BEGIN TX
-    PublishRTUC->>Postgres: INSERT request_type_version {snapshot, version=N+1} (im…
-    PublishRTUC->>Postgres: UPDATE request_type SET status='PUBLISHED', currentVers…
+    PublishRTUC->>Postgres: INSERT request_type_version {snapshot, version=N+1} (immutable)
+    PublishRTUC->>Postgres: UPDATE request_type SET status='PUBLISHED', currentVersion=N+1
     PublishRTUC->>Postgres: INSERT audit_log {acao='PUBLISH', operadorId, version=N+1}
     PublishRTUC->>Postgres: COMMIT
     PublishRTUC-->>RTController: RequestTypeDto {status='PUBLISHED', version=N+1}
@@ -258,8 +258,8 @@ sequenceDiagram
     participant PublishRTUC as PublishRequestTypeUseCase
     participant Postgres
 
-    Admin->>WebApp: Clica "Publicar" (client-side não detectou erro de sint…
-    WebApp->>RTController: POST /request-types/:id/publish (Bearer, request_type.m…
+    Admin->>WebApp: Clica "Publicar" (client-side não detectou erro de sintaxe)
+    WebApp->>RTController: POST /request-types/:id/publish (Bearer, request_type.manage ✓)
     RTController->>PublishRTUC: execute(id)
     PublishRTUC->>Postgres: SELECT request_type BY id (form_schema, workflow_json)
     Postgres-->>PublishRTUC: RequestTypeEntity {status='DRAFT'}
@@ -297,7 +297,7 @@ sequenceDiagram
     Admin->>WebApp: Clica "Excluir" no tipo "Aproveitamento"
     WebApp->>RTController: DELETE /request-types/:id (Bearer, request_type.manage ✓)
     RTController->>DeleteRTUC: execute(id)
-    DeleteRTUC->>Postgres: SELECT count(solicitacoes + request_type_versions) WHER…
+    DeleteRTUC->>Postgres: SELECT count(solicitacoes + request_type_versions) WHERE request_type_id=:id
     Postgres-->>DeleteRTUC: count=5 (histórico existente)
     DeleteRTUC-->>RTController: 422 UnprocessableEntity (request_type_in_use)
     RTController-->>WebApp: 422 Problem Details (request_type_in_use, count=5)

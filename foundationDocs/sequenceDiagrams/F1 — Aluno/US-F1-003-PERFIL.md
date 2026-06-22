@@ -52,11 +52,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ProfileController
         participant UpdateProfileUseCase
@@ -93,11 +93,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ProfileController
         participant MinIO
@@ -108,13 +108,13 @@ sequenceDiagram
     WebApp->>JwtFilter: POST /me/avatar/presigned-url (Bearer)
     JwtFilter->>JwtFilter: valida JWT + user.update_own_profile ✓
     JwtFilter->>ProfileController: repassa (usuarioId)
-    ProfileController->>MinIO: gera presigned PUT URL (bucket=avatars, key=usuarioId, …
+    ProfileController->>MinIO: gera presigned PUT URL (bucket=avatars, key=usuarioId, maxSize=2MB, TTL=5min)
     MinIO-->>ProfileController: presignedUrl + fileKey
     ProfileController-->>WebApp: 200 {presignedUrl, fileKey}
     WebApp->>MinIO: PUT presignedUrl (image/jpeg bytes, Content-Length)
     MinIO-->>WebApp: 200 (objeto persistido em avatars/)
-    WebApp->>ProfileController: PATCH /me {avatarKey: fileKey} (Bearer, user.update_own…
-    ProfileController->>Postgres: UPDATE usuario SET avatar_key=:key, updated_at=now() + …
+    WebApp->>ProfileController: PATCH /me {avatarKey: fileKey} (Bearer, user.update_own_profile ✓)
+    ProfileController->>Postgres: UPDATE usuario SET avatar_key=:key, updated_at=now() + INSERT audit_log(profile.avatar_updated) + COMMIT
     ProfileController-->>WebApp: 200 {avatarUrl: "https://minio/.../avatarUrl"}
     WebApp-->>Aluno: DS/Avatar atualizado com nova foto
 ```
@@ -137,27 +137,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ChangePasswordUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: clica "Salvar senha" (senhaAtual + novaSenha forte + co…
-    WebApp->>JwtFilter: PATCH /me/password {senhaAtual, novaSenha} (Bearer; RHF…
+    Aluno->>WebApp: clica "Salvar senha" (senhaAtual + novaSenha forte + confirmaSenha ✓)
+    WebApp->>JwtFilter: PATCH /me/password {senhaAtual, novaSenha} (Bearer; RHF validado)
     JwtFilter->>JwtFilter: valida JWT + user.update_own_profile ✓
-    JwtFilter->>ChangePasswordUseCase: repassa (usuarioId, senhaAtual, novaSenha, currentSessi…
-    ChangePasswordUseCase->>Postgres: BEGIN; SELECT senha_hash FROM usuario WHERE id=usuarioI…
+    JwtFilter->>ChangePasswordUseCase: repassa (usuarioId, senhaAtual, novaSenha, currentSessionId, ip, ua)
+    ChangePasswordUseCase->>Postgres: BEGIN; SELECT senha_hash FROM usuario WHERE id=usuarioId
     Postgres-->>ChangePasswordUseCase: {senha_hash}
     ChangePasswordUseCase->>Postgres: UPDATE senha_hash=Argon2id(novaSenha), updated_at=now()
-    ChangePasswordUseCase->>Postgres: DELETE refresh_token WHERE usuario_id=:id AND id != cur…
+    ChangePasswordUseCase->>Postgres: DELETE refresh_token WHERE usuario_id=:id AND id != currentSessionId
     ChangePasswordUseCase->>Postgres: INSERT audit_log(password.changed, usuarioId) + COMMIT
     ChangePasswordUseCase-->>WebApp: 200 OK {message}
-    WebApp-->>Aluno: DS/AlertBanner success "Senha alterada. Outras sessões …
+    WebApp-->>Aluno: DS/AlertBanner success "Senha alterada. Outras sessões encerradas."
 ```
 
 **Notas:**
@@ -178,11 +178,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ChangePasswordUseCase
         participant Postgres
@@ -192,7 +192,7 @@ sequenceDiagram
     WebApp->>JwtFilter: PATCH /me/password {senhaAtual, novaSenha} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + user.update_own_profile ✓
     JwtFilter->>ChangePasswordUseCase: repassa (usuarioId, senhaAtual, novaSenha)
-    ChangePasswordUseCase->>Postgres: BEGIN; SELECT senha_hash FROM usuario WHERE id=usuarioI…
+    ChangePasswordUseCase->>Postgres: BEGIN; SELECT senha_hash FROM usuario WHERE id=usuarioId
     Postgres-->>ChangePasswordUseCase: {senha_hash}
     ChangePasswordUseCase->>Postgres: ROLLBACK (Argon2id.verify → false)
     ChangePasswordUseCase-->>WebApp: 401 Problem Details (type: senha_atual_incorreta)
@@ -216,11 +216,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant SessionsController
         participant Postgres
@@ -230,14 +230,14 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /me/sessions (Bearer)
     JwtFilter->>JwtFilter: valida JWT + user.update_own_profile ✓
     JwtFilter->>SessionsController: repassa (usuarioId, currentSessionId)
-    SessionsController->>Postgres: SELECT refresh_token WHERE usuario_id=:id ORDER BY last…
+    SessionsController->>Postgres: SELECT refresh_token WHERE usuario_id=:id ORDER BY last_used_at DESC
     Postgres-->>SessionsController: [{sessionId, device, ip, lastUsed}]
     SessionsController-->>WebApp: 200 [{sessions + _links.encerrar exceto sessão atual}]
-    Aluno->>WebApp: clica "Encerrar" para "iPhone — Safari" (via _links.enc…
+    Aluno->>WebApp: clica "Encerrar" para "iPhone — Safari" (via _links.encerrar href)
     WebApp->>JwtFilter: DELETE /me/sessions/{sessionId} (Bearer)
     JwtFilter->>SessionsController: user.update_own_profile ✓ → repassa (usuarioId, sessionId)
-    SessionsController->>Postgres: BEGIN; DELETE refresh_token WHERE id=:sessionId AND usu…
-    SessionsController->>Postgres: INSERT audit_log(session.revoked, sessionId, usuarioId)…
+    SessionsController->>Postgres: BEGIN; DELETE refresh_token WHERE id=:sessionId AND usuario_id=:id
+    SessionsController->>Postgres: INSERT audit_log(session.revoked, sessionId, usuarioId, ip) + COMMIT
     SessionsController-->>WebApp: 200 OK
     WebApp-->>Aluno: sessão removida da DS/DataTable em tempo real
 ```
@@ -260,11 +260,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant NotifPrefsController
         participant NotifPrefsUseCase
@@ -272,12 +272,12 @@ sequenceDiagram
     end
 
     Aluno->>WebApp: desabilita push para MEDIUM + clica "Salvar preferências"
-    WebApp->>JwtFilter: PATCH /me/notifications {prefs, dnd, digestMode} (Beare…
+    WebApp->>JwtFilter: PATCH /me/notifications {prefs, dnd, digestMode} (Bearer; RHF validado)
     JwtFilter->>JwtFilter: valida JWT + user.update_own_profile ✓
     JwtFilter->>NotifPrefsController: repassa (usuarioId, payload)
     NotifPrefsController->>NotifPrefsUseCase: execute(usuarioId, prefs)
     NotifPrefsUseCase->>NotifPrefsUseCase: valida prefs CRITICAL não foram desabilitadas
-    NotifPrefsUseCase->>Postgres: UPSERT notif_prefs SET prefs=:json, dnd=:json, digest_m…
+    NotifPrefsUseCase->>Postgres: UPSERT notif_prefs SET prefs=:json, dnd=:json, digest_mode=:mode, updated_at=now()
     NotifPrefsUseCase->>Postgres: INSERT audit_log(notif_prefs.updated, usuarioId) + COMMIT
     NotifPrefsController-->>WebApp: 200 OK {prefs atualizadas}
     WebApp-->>Aluno: DS/Toast success "Preferências salvas."

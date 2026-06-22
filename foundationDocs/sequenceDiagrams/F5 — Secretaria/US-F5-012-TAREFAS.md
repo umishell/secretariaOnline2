@@ -64,7 +64,7 @@ sequenceDiagram
     Secretaria->>WebApp: acessa /secretaria/tarefas
     WebApp->>TaskController: GET /tasks (Bearer, task.manage ✓)
     TaskController->>TaskUseCase: listTasks(responsavelId)
-    TaskUseCase->>Postgres: SELECT * FROM tasks WHERE responsavel_id=:id ORDER BY c…
+    TaskUseCase->>Postgres: SELECT * FROM tasks WHERE responsavel_id=:id ORDER BY created_at DESC
     Postgres-->>TaskUseCase: List<Task> (PENDENTE + CONCLUIDA)
     TaskUseCase-->>TaskController: TasksDto {pendentes[], concluidas[]}
     TaskController-->>WebApp: 200 {pendentes[], concluidas[], _links: [criar]}
@@ -95,10 +95,10 @@ sequenceDiagram
     participant Postgres
 
     Secretaria->>WebApp: clica "Nova tarefa"; preenche título e vencimento
-    WebApp->>TaskController: POST /tasks (Bearer, task.manage ✓) {titulo, descricao,…
+    WebApp->>TaskController: POST /tasks (Bearer, task.manage ✓) {titulo, descricao, vencimento}
     TaskController->>TaskUseCase: createTask(CreateTaskCmd)
     TaskUseCase->>Postgres: BEGIN
-    TaskUseCase->>Postgres: INSERT INTO tasks (id, titulo, estado='PENDENTE', venci…
+    TaskUseCase->>Postgres: INSERT INTO tasks (id, titulo, estado='PENDENTE', vencimento, responsavel_id)
     TaskUseCase->>Postgres: COMMIT
     Postgres-->>TaskUseCase: Task{id, titulo, estado='PENDENTE'}
     TaskUseCase-->>TaskController: TaskDto
@@ -129,8 +129,8 @@ sequenceDiagram
     participant TaskUseCase
     participant Postgres
 
-    Secretaria->>WebApp: arrasta card para "Concluídas" (ou clica "Concluir" via…
-    WebApp->>TaskController: PATCH /tasks/:id (Bearer, task.manage ✓) {estado: "CONC…
+    Secretaria->>WebApp: arrasta card para "Concluídas" (ou clica "Concluir" via teclado)
+    WebApp->>TaskController: PATCH /tasks/:id (Bearer, task.manage ✓) {estado: "CONCLUIDA"}
     TaskController->>TaskUseCase: updateTaskState(id, CONCLUIDA)
     TaskUseCase->>Postgres: BEGIN
     TaskUseCase->>Postgres: UPDATE tasks SET estado='CONCLUIDA' WHERE id=:id
@@ -253,7 +253,7 @@ sequenceDiagram
     participant TaskUseCase
 
     Secretaria->>WebApp: salva tarefa com título vazio (ou > 200 chars)
-    WebApp->>TaskController: POST /tasks (Bearer, task.manage ✓) {titulo: "" ou leng…
+    WebApp->>TaskController: POST /tasks (Bearer, task.manage ✓) {titulo: "" ou length > 200}
     TaskController->>TaskUseCase: createTask(CreateTaskCmd)
     TaskUseCase-->>TaskController: ValidationException (titulo obrigatório / max 200)
     TaskController-->>WebApp: 422 Problem Details (invalid_field: titulo)

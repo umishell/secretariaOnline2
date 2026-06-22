@@ -1,0 +1,71 @@
+// ============================================================
+// M2 — Acadêmico (4 tabelas)
+// Fonte: §5.3 analise_arquitetural
+// Decisões aplicadas: I7 (curso sem id_coordenador → FK tardia),
+//                     I8 (calendario_academico depois de request_type)
+// ============================================================
+
+Table curso {
+  id                   uuid         [pk, not null]
+  nome                 varchar(200) [not null]
+  sigla                varchar(20)  [unique, not null]
+  codigo_sie           varchar(20)
+  id_coordenador       uuid         [ref: > usuario.id, note: 'FK tardia — I7: adicionada via ALTER após usuario existir']
+  tipo_calendario      smallint     [not null, note: '15 ou 18 semanas por semestre']
+  horas_formativas_req integer      [not null, default: 0]
+  ativo                boolean      [not null, default: true]
+  created_at           timestamptz  [default: `now()`]
+}
+
+Table disciplina {
+  id            uuid        [pk, not null]
+  codigo        varchar(30) [not null]
+  nome          varchar(200) [not null]
+  id_curso      uuid        [not null, ref: > curso.id]
+  periodo       smallint    [note: 'período sugerido na grade (1..n)']
+  carga_horaria integer
+  ativa         boolean     [not null, default: true]
+
+  Indexes {
+    (id_curso, codigo) [unique, note: 'código único dentro do curso']
+  }
+}
+
+Table periodo_letivo {
+  id       uuid     [pk, not null]
+  ano      smallint [not null]
+  semestre smallint [not null, note: 'CHECK: 1 ou 2']
+  data_ini date     [not null]
+  data_fim date     [not null]
+
+  Indexes {
+    (ano, semestre) [unique]
+  }
+}
+
+// Decisão I8 — calendario_academico criado DEPOIS de request_type (M3)
+// FK id_request_type → request_type é cross-módulo M2→M3
+Table calendario_academico {
+  id              uuid [pk, not null]
+  id_periodo      uuid [not null, ref: > periodo_letivo.id]
+  id_request_type uuid [not null, ref: > request_type.id, note: 'FK cross-módulo → M3 Solicitações']
+  dt_ini          date [not null]
+  dt_fim          date [not null, note: 'CHECK: dt_fim >= dt_ini']
+  observacao      text
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M2
+// ============================================================
+// curso.id_coordenador        →  usuario.id        (M1 IAM — FK tardia, I7)
+// calendario_academico.id_request_type → request_type.id (M3 Solicitações — I8)
+// ============================================================
+// FKs cross-módulo recebidas (outros módulos apontam para M2)
+// ============================================================
+// M1  usuario.id_curso         →  curso.id
+// M3  request.id_curso         →  curso.id
+// M4  formative_activity.id_curso → curso.id
+// M6  tcc.id_curso             →  curso.id
+// M7  communication.id_curso_alvo → curso.id
+// M8  event_attendance.id_curso →  curso.id
+// ============================================================

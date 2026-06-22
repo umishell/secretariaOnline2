@@ -53,11 +53,11 @@ Relacionado downstream: `/primeiro-acesso` após `mustChangePassword=true` é co
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as LoginUseCase
         participant DB as Postgres
@@ -94,11 +94,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as LoginUseCase
         participant DB as Postgres
@@ -135,11 +135,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as LoginUseCase
         participant DB as Postgres
@@ -175,11 +175,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant RL as RateLimitFilter
         participant AC as AuthController
     end
@@ -187,7 +187,7 @@ sequenceDiagram
     Usuario->>WebApp: Submit credenciais (6ª tentativa < 1min)
     WebApp->>RL: POST /auth/login {identificador, senha}
     RL->>RL: Bucket4j check (IP+identificador ≥ 5/min) → excedido
-    RL-->>WebApp: 429 Problem Details (too_many_requests, retryAfterSecon…
+    RL-->>WebApp: 429 Problem Details (too_many_requests, retryAfterSeconds)
     WebApp-->>Usuario: DS/AlertBanner warning + botão desabilitado
 ```
 
@@ -209,11 +209,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as LoginUseCase
         participant DB as Postgres
@@ -249,11 +249,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as RefreshTokenUseCase
         participant DB as Postgres

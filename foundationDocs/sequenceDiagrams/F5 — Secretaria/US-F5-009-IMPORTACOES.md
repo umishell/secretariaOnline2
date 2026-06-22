@@ -56,11 +56,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ImportController
         participant ImportTemplateUC as ImportTemplateUseCase
@@ -72,7 +72,7 @@ sequenceDiagram
     JwtFilter->>ImportController: repassa (kind=alunos)
     ImportController->>ImportTemplateUC: execute(kind)
     ImportTemplateUC-->>ImportController: CSV bytes (headers + linha exemplo, RN-F5-009-11)
-    ImportController-->>WebApp: 200 Content-Disposition: attachment; filename=alunos_mo…
+    ImportController-->>WebApp: 200 Content-Disposition: attachment; filename=alunos_modelo.csv
     WebApp-->>Secretaria: download iniciado no browser
 ```
 
@@ -94,11 +94,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ImportController
         participant ValidateImportUC as ValidateImportUseCase
@@ -120,7 +120,7 @@ sequenceDiagram
         WebApp->>ImportController: GET /imports/{jobId} (Bearer)
         ImportController-->>WebApp: 200 {status: VALIDATED, rows, errorCount: 20}
     end
-    WebApp-->>Secretaria: DS/DataTable preview (480 verdes, 20 vermelhas) + confi…
+    WebApp-->>Secretaria: DS/DataTable preview (480 verdes, 20 vermelhas) + confirmar habilitado se errorCount=0
 ```
 
 **Notas:**
@@ -141,18 +141,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ImportController
         participant ConfirmImportUC as ConfirmImportUseCase
         participant Postgres
     end
 
-    Secretaria->>WebApp: clica "Confirmar importação" (passo 4 do wizard, errorC…
+    Secretaria->>WebApp: clica "Confirmar importação" (passo 4 do wizard, errorCount=0)
     WebApp->>JwtFilter: POST /imports/{jobId}/confirm (Bearer)
     JwtFilter->>JwtFilter: valida JWT + import.run ✓
     JwtFilter->>ImportController: repassa (jobId, secretariaId)
@@ -160,8 +160,8 @@ sequenceDiagram
     ConfirmImportUC->>Postgres: BEGIN TX lote 1/1
     ConfirmImportUC->>Postgres: INSERT/UPSERT dados × 500 (lote 1/1, kind=alunos)
     ConfirmImportUC->>Postgres: UPDATE import_job SET status=SUCCESS, importados=500
-    ConfirmImportUC->>Postgres: INSERT outbox_event (imports.completed, {jobId, SUCCESS…
-    ConfirmImportUC->>Postgres: INSERT audit_log (operadorId, kind, checksum, 500, SUCC…
+    ConfirmImportUC->>Postgres: INSERT outbox_event (imports.completed, {jobId, SUCCESS, importados: 500})
+    ConfirmImportUC->>Postgres: INSERT audit_log (operadorId, kind, checksum, 500, SUCCESS)
     ConfirmImportUC->>Postgres: COMMIT
     ConfirmImportUC-->>ImportController: {status: SUCCESS, importados: 500, falhas: 0}
     ImportController-->>WebApp: 200 {status: SUCCESS, importados: 500, falhas: 0}
@@ -186,11 +186,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ImportController
         participant ConfirmImportUC as ConfirmImportUseCase
@@ -208,7 +208,7 @@ sequenceDiagram
     ConfirmImportUC->>Postgres: INSERT outbox_event (imports.completed, PARTIAL) + COMMIT
     ConfirmImportUC-->>ImportController: {PARTIAL, importados: 1000, falhas: 1500}
     ImportController-->>WebApp: 200 {status: PARTIAL, importados: 1000, falhas: 1500}
-    WebApp-->>Secretaria: DS/AlertBanner warning "1.000 importados, 1.500 não pro…
+    WebApp-->>Secretaria: DS/AlertBanner warning "1.000 importados, 1.500 não processados (erro no lote 2)"
 ```
 
 **Notas:**
@@ -230,11 +230,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ImportController
     end

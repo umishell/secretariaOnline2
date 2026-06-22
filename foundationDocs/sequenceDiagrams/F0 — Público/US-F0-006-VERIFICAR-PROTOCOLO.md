@@ -49,11 +49,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as ProtocoloController
         participant UC as VerificarProtocoloUseCase
         participant DB as Postgres
@@ -62,11 +62,11 @@ sequenceDiagram
     Verificador->>WebApp: Acessa /publico/verificar-protocolo/PROT-2026-00123
     WebApp->>AC: GET /publico/protocolos/{id}/verificacao (sem auth)
     AC->>UC: execute(VerifyProtocolQuery)
-    UC->>DB: SELECT request BY protocolo_id (tipo, status, datas, ha…
+    UC->>DB: SELECT request BY protocolo_id (tipo, status, datas, hashSha256)
     DB-->>UC: RequestEntity (status=CONCLUIDA, hashSha256)
     UC-->>AC: ProtocoloVerificacaoDto (nomeParcial mascarado LGPD)
     AC-->>WebApp: 200 {…}
-    WebApp-->>Verificador: DS/Card com metadados + FileDropzone (verificação opcio…
+    WebApp-->>Verificador: DS/Card com metadados + FileDropzone (verificação opcional por upload)
 ```
 
 **Notas:**
@@ -88,7 +88,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
         participant Crypto as Web Crypto API
@@ -123,11 +123,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as ProtocoloController
         participant UC as VerificarProtocoloUseCase
         participant DB as Postgres
@@ -160,11 +160,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Verificador
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant RL as RateLimitFilter
         participant AC as ProtocoloController
     end

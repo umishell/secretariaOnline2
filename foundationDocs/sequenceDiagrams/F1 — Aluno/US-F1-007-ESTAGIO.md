@@ -48,11 +48,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipsController
         participant Postgres
@@ -62,10 +62,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /internships?aluno=me (Bearer)
     JwtFilter->>JwtFilter: valida JWT + internship.view_own ✓
     JwtFilter->>InternshipsController: repassa (alunoId)
-    InternshipsController->>Postgres: SELECT internship WHERE aluno_id=:alunoId ORDER BY vige…
-    Postgres-->>InternshipsController: [{id, empresa, supervisor, vigencia_inicio, vigencia_fi…
+    InternshipsController->>Postgres: SELECT internship WHERE aluno_id=:alunoId ORDER BY vigencia_inicio DESC
+    Postgres-->>InternshipsController: [{id, empresa, supervisor, vigencia_inicio, vigencia_fim, situacao}]
     InternshipsController-->>WebApp: 200 {internships: [...]} ou {internships: []}
-    WebApp-->>Aluno: tabela (Empresa, Supervisor, Vigência, Situação DS/Badg…
+    WebApp-->>Aluno: tabela (Empresa, Supervisor, Vigência, Situação DS/Badge estado)
 ```
 
 **Notas:**
@@ -86,11 +86,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipsController
         participant Postgres
@@ -100,11 +100,11 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /internships/{id} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + internship.view_own ✓ + aluno_id = alunoId
     JwtFilter->>InternshipsController: repassa (alunoId, internshipId)
-    InternshipsController->>Postgres: SELECT internship + internship_document + internship_re…
-    Postgres-->>InternshipsController: {internship, documentos: [{tipo, status, fileKey ?, _li…
+    InternshipsController->>Postgres: SELECT internship + internship_document + internship_review ORDER BY created_at DESC
+    Postgres-->>InternshipsController: {internship, documentos: [{tipo, status, fileKey ?, _links.upload?}], pareceres: [...]}
     InternshipsController-->>WebApp: 200 {internship, documentos, pareceres, _links}
-    WebApp->>WebApp: useActions(_links) → botão upload por tipo somente se _…
-    WebApp-->>Aluno: tab Documentos (status por tipo) + tab Pareceres (crono…
+    WebApp->>WebApp: useActions(_links) → botão upload por tipo somente se _links.upload presente
+    WebApp-->>Aluno: tab Documentos (status por tipo) + tab Pareceres (cronologia DESC)
 ```
 
 **Notas:**
@@ -125,26 +125,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant InternshipsController
         participant UploadDocumentUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: tab Documentos → upload PDF "Relatório Final" (fileKey …
-    WebApp->>JwtFilter: POST /internships/{id}/documents {documentType: RELATOR…
+    Aluno->>WebApp: tab Documentos → upload PDF "Relatório Final" (fileKey do presigned PUT ✓)
+    WebApp->>JwtFilter: POST /internships/{id}/documents {documentType: RELATORIO_FINAL, fileKey} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + internship.view_own ✓
     JwtFilter->>InternshipsController: repassa (alunoId, internshipId, documentType, fileKey)
     InternshipsController->>UploadDocumentUseCase: execute(cmd)
-    UploadDocumentUseCase->>Postgres: BEGIN; UPDATE internship_document SET fileKey=:key, sta…
-    UploadDocumentUseCase->>Postgres: INSERT outbox_event(estagios.document_uploaded, interns…
+    UploadDocumentUseCase->>Postgres: BEGIN; UPDATE internship_document SET fileKey=:key, status=AGUARDANDO_PARECER, updated_at=now()
+    UploadDocumentUseCase->>Postgres: INSERT outbox_event(estagios.document_uploaded, internshipId, alunoId, documentType)
     InternshipsController-->>WebApp: 200 OK {documentType, status: AGUARDANDO_PARECER}
-    WebApp-->>Aluno: status do documento atualizado "Enviado — aguardando pa…
+    WebApp-->>Aluno: status do documento atualizado "Enviado — aguardando parecer do orientador."
 ```
 
 **Notas:**

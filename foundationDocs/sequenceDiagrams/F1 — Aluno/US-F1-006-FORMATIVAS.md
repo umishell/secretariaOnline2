@@ -49,11 +49,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant Postgres
@@ -63,10 +63,10 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /formative-entries?aluno=me (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.view_own ✓
     JwtFilter->>FormativeController: repassa (alunoId)
-    FormativeController->>Postgres: SELECT formative_entry WHERE aluno_id=:alunoId ORDER BY…
-    Postgres-->>FormativeController: [{id, atividade, horas_declaradas, horas_validadas, est…
+    FormativeController->>Postgres: SELECT formative_entry WHERE aluno_id=:alunoId ORDER BY created_at DESC
+    Postgres-->>FormativeController: [{id, atividade, horas_declaradas, horas_validadas, estado, created_at}]
     FormativeController-->>WebApp: 200 {entries: [...], _links.nova?}
-    WebApp->>WebApp: useActions(_links) → "Nova atividade" apenas se _links.…
+    WebApp->>WebApp: useActions(_links) → "Nova atividade" apenas se _links.nova presente
     WebApp-->>Aluno: tabela com atividade, horas, DS/Badge estado, data
 ```
 
@@ -88,27 +88,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant SubmitFormativeUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: seleciona atividade + informa 20h + comprovante enviado…
-    WebApp->>JwtFilter: POST /formative-entries {atividadeId, horasDeclaradas: …
+    Aluno->>WebApp: seleciona atividade + informa 20h + comprovante enviado ao MinIO ✓)
+    WebApp->>JwtFilter: POST /formative-entries {atividadeId, horasDeclaradas: 20, comprovanteKey} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.submit ✓
     JwtFilter->>FormativeController: repassa (alunoId, atividadeId, horas, comprovanteKey)
     FormativeController->>SubmitFormativeUseCase: execute(cmd)
-    SubmitFormativeUseCase->>Postgres: BEGIN; SELECT formative_activity WHERE id=:atividadeId …
-    SubmitFormativeUseCase->>Postgres: INSERT formative_entry {estado=SUBMETIDA, horas_declara…
-    SubmitFormativeUseCase->>Postgres: INSERT outbox_event(formativas.submitted, entryId, alun…
+    SubmitFormativeUseCase->>Postgres: BEGIN; SELECT formative_activity WHERE id=:atividadeId AND curso_id=:cursoId
+    SubmitFormativeUseCase->>Postgres: INSERT formative_entry {estado=SUBMETIDA, horas_declaradas, comprovante_key=:key}
+    SubmitFormativeUseCase->>Postgres: INSERT outbox_event(formativas.submitted, entryId, alunoId, cursoId)
     FormativeController-->>WebApp: 201 Created {id, _links}
-    WebApp-->>Aluno: redireciona /formativas/:id + DS/Toast "Atividade envia…
+    WebApp-->>Aluno: redireciona /formativas/:id + DS/Toast "Atividade enviada para análise da CAAF."
 ```
 
 **Notas:**
@@ -129,30 +129,30 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant ConfirmFormativeUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: acessa /formativas com entryId pré-criada (link da noti…
+    Aluno->>WebApp: acessa /formativas com entryId pré-criada (link da notificação push/email)
     WebApp->>JwtFilter: GET /formative-entries/{id} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.view_own ✓ + aluno_id = alunoId
     JwtFilter->>FormativeController: repassa (alunoId, entryId)
-    FormativeController->>Postgres: SELECT formative_entry WHERE id=:id AND aluno_id=:aluno…
+    FormativeController->>Postgres: SELECT formative_entry WHERE id=:id AND aluno_id=:alunoId AND estado=PENDENTE_CONFIRMACAO
     FormativeController-->>WebApp: 200 {entry readonly, _links.confirmar}
-    WebApp-->>Aluno: formulário readonly + DS/AlertBanner "Participação regi…
+    WebApp-->>Aluno: formulário readonly + DS/AlertBanner "Participação registrada automaticamente pelo evento."
     Aluno->>WebApp: clica "Confirmar" (1 clique)
     WebApp->>FormativeController: POST /formative-entries/{id}/confirm (Bearer, JWT ✓)
     FormativeController->>ConfirmFormativeUseCase: execute(alunoId, entryId)
-    ConfirmFormativeUseCase->>Postgres: BEGIN; UPDATE formative_entry SET estado=SUBMETIDA WHER…
+    ConfirmFormativeUseCase->>Postgres: BEGIN; UPDATE formative_entry SET estado=SUBMETIDA WHERE id=:id AND aluno_id=:alunoId) + COMMIT
     FormativeController-->>WebApp: 200 OK {id, estado: SUBMETIDA}
-    WebApp-->>Aluno: redireciona /formativas/:id + DS/Toast "Atividade confi…
+    WebApp-->>Aluno: redireciona /formativas/:id + DS/Toast "Atividade confirmada com sucesso."
 ```
 
 **Notas:**
@@ -173,11 +173,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FormativeController
         participant Postgres
@@ -187,11 +187,11 @@ sequenceDiagram
     WebApp->>JwtFilter: GET /formative-entries/{id} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + formative.view_own ✓ + aluno_id = alunoId
     JwtFilter->>FormativeController: repassa (alunoId, entryId)
-    FormativeController->>Postgres: SELECT formative_entry JOIN formative_activity JOIN cer…
-    Postgres-->>FormativeController: {entry, atividade, horas_declaradas, horas_validadas, p…
+    FormativeController->>Postgres: SELECT formative_entry JOIN formative_activity JOIN certificate LEFT JOIN parecer
+    Postgres-->>FormativeController: {entry, atividade, horas_declaradas, horas_validadas, parecer, _links.baixar-certificado?}
     FormativeController-->>WebApp: 200 {…}
     WebApp->>WebApp: useActions(_links) → botão "Baixar certificado" presente
-    WebApp-->>Aluno: detalhe (badge APROVADA, parecer CAAF, horas validadas)…
+    WebApp-->>Aluno: detalhe (badge APROVADA, parecer CAAF, horas validadas) + link certificado se APROVADA)
 ```
 
 **Notas:**

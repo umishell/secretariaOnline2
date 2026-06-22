@@ -60,20 +60,20 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EgressosController
         participant Postgres
     end
 
-    Secretaria->>WebApp: acessa /secretaria/egressos + aplica filtros (curso, an…
-    WebApp->>JwtFilter: GET /secretaria/egressos?curso=TADS&situacaoDiploma=PEN…
+    Secretaria->>WebApp: acessa /secretaria/egressos + aplica filtros (curso, ano, situacaoDiploma)
+    WebApp->>JwtFilter: GET /secretaria/egressos?curso=TADS&situacaoDiploma=PENDENTE
     JwtFilter->>EgressosController: repassa (secretariaId, cursoIds[], alumni.list ✓)
-    EgressosController->>Postgres: SELECT usuario JOIN graduation_record WHERE role=EGRESS…
+    EgressosController->>Postgres: SELECT usuario JOIN graduation_record WHERE role=EGRESSO
     Postgres-->>EgressosController: {content[], totalElements}
     EgressosController-->>WebApp: 200 {…}
     WebApp-->>Secretaria: DataTable (egressos + filtros + badge situação diploma)
@@ -97,23 +97,23 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant GraduationController
         participant Postgres
     end
 
     Secretaria->>WebApp: seleciona curso TADS + período 2025/2 no Passo 1 do wizard
-    WebApp->>JwtFilter: GET /students?eligibleForGraduation=true&cursoId=...&pe…
+    WebApp->>JwtFilter: GET /students?eligibleForGraduation=true&cursoId=...&periodoId=...
     JwtFilter->>GraduationController: repassa (secretariaId, diploma.register ✓)
-    GraduationController->>Postgres: SELECT alunos + avaliar elegibilidade (TCC, disciplinas…
+    GraduationController->>Postgres: SELECT alunos + avaliar elegibilidade (TCC, disciplinas, formativas)
     Postgres-->>GraduationController: [{id, nome, eligible, bloqueio: {razao, detalhe}}]
     GraduationController-->>WebApp: 200 [{aluno, eligible: true|false, bloqueio}]
-    WebApp-->>Secretaria: Passo 1 — checkboxes (elegíveis ✓ marcados, inelegíveis…
+    WebApp-->>Secretaria: Passo 1 — checkboxes (elegíveis ✓ marcados, inelegíveis desabilitados)
 ```
 
 **Notas:**
@@ -134,27 +134,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant GraduationController
         participant Postgres
     end
 
-    Secretaria->>WebApp: Passo 2 — preenche dataCerimonia, livro, folha, ata + c…
-    WebApp->>JwtFilter: POST /graduations {cursoId, periodoId, dataCerimonia, l…
+    Secretaria->>WebApp: Passo 2 — preenche dataCerimonia, livro, folha, ata + confirma N alunos
+    WebApp->>JwtFilter: POST /graduations {cursoId, periodoId, dataCerimonia, livro, folha, ata, alunoIds[]}
     JwtFilter->>GraduationController: repassa (secretariaId, diploma.register ✓)
     GraduationController->>Postgres: BEGIN TX
-    GraduationController->>Postgres: INSERT graduation_record(alunoId, cursoId, dataCerimoni…
-    GraduationController->>Postgres: UPDATE usuario SET role=EGRESSO, revoga capabilities AL…
+    GraduationController->>Postgres: INSERT graduation_record(alunoId, cursoId, dataCerimonia, livro, folha, ata) × N
+    GraduationController->>Postgres: UPDATE usuario SET role=EGRESSO, revoga capabilities ALUNO
     GraduationController->>Postgres: INSERT outbox_event(egressos.graduated, alunoId) × N
-    GraduationController->>Postgres: INSERT audit_log(graduation.confirm, operadorId, alunoI…
+    GraduationController->>Postgres: INSERT audit_log(graduation.confirm, operadorId, alunoIds[])
     GraduationController->>Postgres: COMMIT
     GraduationController-->>WebApp: 201 {graduationIds[], total: N}
-    WebApp-->>Secretaria: wizard concluído — N alunos promovidos a EGRESSO (dispa…
+    WebApp-->>Secretaria: wizard concluído — N alunos promovidos a EGRESSO (dispatch async)
 ```
 
 **Notas:**
@@ -176,25 +176,25 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant GraduationController
         participant Postgres
     end
 
-    Secretaria->>WebApp: clica "Confirmar entrega" + seleciona método=PRESENCIAL…
-    WebApp->>JwtFilter: PATCH /graduations/{id}/confirm-delivery {metodo=PRESEN…
+    Secretaria->>WebApp: clica "Confirmar entrega" + seleciona método=PRESENCIAL
+    WebApp->>JwtFilter: PATCH /graduations/{id}/confirm-delivery {metodo=PRESENCIAL, dataEntrega}
     JwtFilter->>GraduationController: repassa (secretariaId, diploma.register ✓)
     GraduationController->>Postgres: BEGIN TX
-    GraduationController->>Postgres: UPDATE graduation_record SET situacao_diploma=ENTREGUE,…
-    GraduationController->>Postgres: INSERT audit_log(graduation.diploma_delivered, operador…
+    GraduationController->>Postgres: UPDATE graduation_record SET situacao_diploma=ENTREGUE, metodo_entrega, data_entrega
+    GraduationController->>Postgres: INSERT audit_log(graduation.diploma_delivered, operadorId, graduationId)
     GraduationController->>Postgres: COMMIT
     GraduationController-->>WebApp: 200 {graduation, situacao_diploma=ENTREGUE, _links}
-    WebApp-->>Secretaria: badge ENTREGUE na lista de egressos (invalidateQueries[…
+    WebApp-->>Secretaria: badge ENTREGUE na lista de egressos (invalidateQueries[egressos])
 ```
 
 **Notas:**
@@ -215,19 +215,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant GraduationController
     end
 
     Secretaria->>WebApp: clica "Confirmar colação" (sem diploma.register)
     WebApp->>JwtFilter: POST /graduations {alunoIds, dataCerimonia, ...} (Bearer)
-    JwtFilter->>GraduationController: repassa (secretariaId, authorities[] — diploma.register…
-    GraduationController-->>WebApp: 403 Problem Details (access_denied — diploma.register r…
+    JwtFilter->>GraduationController: repassa (secretariaId, authorities[] — diploma.register ausente)
+    GraduationController-->>WebApp: 403 Problem Details (access_denied — diploma.register required)
     WebApp-->>Secretaria: acesso negado — botão desabilitado se _link ausente
 ```
 

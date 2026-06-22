@@ -65,11 +65,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant ListEventsUC as ListEventsUseCase
@@ -81,11 +81,11 @@ sequenceDiagram
     JwtFilter->>JwtFilter: valida JWT + event.manage ✓
     JwtFilter->>EventController: repassa (secretariaId)
     EventController->>ListEventsUC: execute(query, secretariaId)
-    ListEventsUC->>Postgres: SELECT events WHERE cursoId IN (cursos vinculados) + fi…
+    ListEventsUC->>Postgres: SELECT events WHERE cursoId IN (cursos vinculados) + filtros
     Postgres-->>ListEventsUC: Page<EventEntity>
-    ListEventsUC-->>EventController: Page<EventDto> + _links por item (AGENDADO: [editar, ex…
+    ListEventsUC-->>EventController: Page<EventDto> + _links por item (AGENDADO: [editar, excluir, host])
     EventController-->>WebApp: 200 {items, totalElements, _links: [novoEvento]}
-    WebApp-->>Secretaria: DS/DataTable + DS/Badge(estado) + botões condicionais p…
+    WebApp-->>Secretaria: DS/DataTable + DS/Badge(estado) + botões condicionais por _links
 ```
 
 **Notas:**
@@ -106,11 +106,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant CloseEventUC as CloseEventUseCase
@@ -124,12 +124,12 @@ sequenceDiagram
     EventController->>CloseEventUC: execute(eventId)
     CloseEventUC->>Postgres: BEGIN TX
     CloseEventUC->>Postgres: UPDATE event SET estado=CONCLUIDO, closedAt=now()
-    CloseEventUC->>Postgres: INSERT formative_entry lote (alunos com presença válida…
-    CloseEventUC->>Postgres: INSERT outbox_event (type=events.closed, payload={event…
+    CloseEventUC->>Postgres: INSERT formative_entry lote (alunos com presença válida)
+    CloseEventUC->>Postgres: INSERT outbox_event (type=events.closed, payload={…})
     CloseEventUC->>Postgres: COMMIT
     CloseEventUC-->>EventController: EventDto (CONCLUIDO, presencasContabilizadas=N)
     EventController-->>WebApp: 200 {…}
-    WebApp-->>Secretaria: DS/AlertBanner success "Evento encerrado. Certificados …
+    WebApp-->>Secretaria: DS/AlertBanner success "Evento encerrado. Certificados em processamento"
 ```
 
 **Notas:**
@@ -151,18 +151,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant DeleteEventUC as DeleteEventUseCase
         participant Postgres
     end
 
-    Secretaria->>WebApp: clica "Excluir" em evento AGENDADO (_links.excluir pres…
+    Secretaria->>WebApp: clica "Excluir" em evento AGENDADO (_links.excluir presente)
     WebApp->>JwtFilter: DELETE /events/{id} (Bearer, event.manage ✓)
     JwtFilter->>JwtFilter: valida JWT + event.manage ✓
     JwtFilter->>EventController: repassa (eventId)

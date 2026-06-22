@@ -61,23 +61,23 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
     Secretaria->>WebApp: acessa /solicitacoes
-    WebApp->>JwtFilter: GET /requests?estado=ABERTA&sort=prazo_em&page=0&size=2…
+    WebApp->>JwtFilter: GET /requests?estado=ABERTA&sort=prazo_em&page=0&size=20
     JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.view_curso ✓)
-    RequestController->>Postgres: SELECT requests WHERE curso_id IN cursoIds[] AND estado…
+    RequestController->>Postgres: SELECT requests WHERE curso_id IN cursoIds[] AND estado=ABERTA
     Postgres-->>RequestController: {content[], totalElements, _links por item}
     RequestController-->>WebApp: 200 {content, page, _links}
-    WebApp-->>Secretaria: DataTable (Número, Aluno, Tipo, Estado, Deliberador, SL…
+    WebApp-->>Secretaria: DataTable (Número, Aluno, Tipo, Estado, Deliberador, SLA)
 ```
 
 **Notas:**
@@ -99,11 +99,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
@@ -112,18 +112,18 @@ sequenceDiagram
     Secretaria->>WebApp: clica "Nova interna" + digita GRR no Combobox
     WebApp->>JwtFilter: GET /students?q=20231234 (Bearer, request.internal_open ✓)
     JwtFilter->>RequestController: repassa (secretariaId, cursoIds[])
-    RequestController->>Postgres: SELECT usuario WHERE (grr=... OR nome LIKE) AND curso_i…
+    RequestController->>Postgres: SELECT usuario WHERE (grr=... OR nome LIKE) AND curso_id IN cursoIds[]
     Postgres-->>RequestController: [{id, nome, grr, curso}]
     RequestController-->>WebApp: 200 [{id, nome, grr, curso}]
     WebApp-->>Secretaria: aluno no Combobox; secretária preenche wizard e confirma
     WebApp->>JwtFilter: POST /requests {tipo, dados, onBehalfOf: alunoId} (Bearer)
-    JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.internal_ope…
+    JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.internal_open ✓)
     RequestController->>Postgres: BEGIN TX
-    RequestController->>Postgres: INSERT request(onBehalfOf=alunoId, estado=ABERTA, prazo…
+    RequestController->>Postgres: INSERT request(onBehalfOf=alunoId, estado=ABERTA, prazo_em)
     RequestController->>Postgres: INSERT outbox_event(solicitacoes.opened)
     RequestController->>Postgres: COMMIT
     RequestController-->>WebApp: 201 {id, numero, estado=ABERTA, _links}
-    WebApp-->>Secretaria: /solicitacoes/:id — titular=aluno (dispatch async → lin…
+    WebApp-->>Secretaria: /solicitacoes/:id — titular=aluno (dispatch async → link 10.1b)
 ```
 
 **Notas:**
@@ -145,11 +145,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
@@ -161,11 +161,11 @@ sequenceDiagram
     RequestController->>Postgres: SELECT request + request_events + _links calculados
     Postgres-->>RequestController: {request, timeline, _links: [deliberate, encaminhar, ...]}
     RequestController-->>WebApp: 200 {request, timeline, _links}
-    Secretaria->>WebApp: seleciona ação (ex.: DEFERIDA) + digita justificativa +…
-    WebApp->>JwtFilter: PATCH /requests/{id}/deliberate {decisao=DEFERIDA, just…
+    Secretaria->>WebApp: seleciona ação (ex.: DEFERIDA) + digita justificativa + confirma
+    WebApp->>JwtFilter: PATCH /requests/{id}/deliberate {decisao=DEFERIDA, justificativa}
     JwtFilter->>RequestController: repassa (secretariaId, request.deliberate ✓)
     RequestController->>Postgres: BEGIN TX
-    RequestController->>Postgres: UPDATE request SET estado=DEFERIDA; INSERT request_even…
+    RequestController->>Postgres: UPDATE request SET estado=DEFERIDA; INSERT request_event
     RequestController->>Postgres: INSERT outbox_event(solicitacoes.deliberated)
     RequestController->>Postgres: COMMIT
     RequestController-->>WebApp: 200 {request, estado=DEFERIDA, _links}
@@ -191,21 +191,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
-    Secretaria->>WebApp: seleciona 3 linhas (bulk_assign ✓) + escolhe Atribuir +…
-    WebApp->>JwtFilter: PATCH /requests/bulk {ids[3], action: assign, deliberad…
+    Secretaria->>WebApp: seleciona 3 linhas (bulk_assign ✓) + escolhe Atribuir + professor
+    WebApp->>JwtFilter: PATCH /requests/bulk {ids[3], action: assign, deliberadorId}
     JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.deliberate ✓)
     RequestController->>Postgres: BEGIN TX
-    RequestController->>Postgres: UPDATE requests SET deliberador_id=... WHERE id IN (ids…
+    RequestController->>Postgres: UPDATE requests SET deliberador_id=... WHERE id IN (ids)
     RequestController->>Postgres: INSERT request_events(atribuicao) lote 3 itens
     RequestController->>Postgres: COMMIT
     RequestController-->>WebApp: 200 {updated: 3, ids}
@@ -231,28 +231,28 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
     Secretaria->>WebApp: acessa /secretaria/atrasados
-    WebApp->>JwtFilter: GET /requests?slaBreached=true&sort=prazo_em&page=0&siz…
+    WebApp->>JwtFilter: GET /requests?slaBreached=true&sort=prazo_em&page=0&size=20
     JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.view_curso ✓)
-    RequestController->>Postgres: SELECT requests WHERE prazo_em < now() AND curso_id IN …
+    RequestController->>Postgres: SELECT requests WHERE prazo_em < now() AND curso_id IN cursoIds[]
     Postgres-->>RequestController: {content[], totalElements}
     RequestController-->>WebApp: 200 {content, page} (sem filtros livres — RN-F5-002-09)
     WebApp-->>Secretaria: DataTable SLA breach only + botão Exportar visível
     Secretaria->>WebApp: clica "Exportar"
     WebApp->>JwtFilter: GET /requests?slaBreached=true&format=csv (Bearer)
     JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.view_curso ✓)
-    RequestController->>Postgres: SELECT requests (todos campos CSV) WHERE prazo_em < now…
-    Postgres-->>RequestController: rows completas (Número, Tipo, Aluno, GRR, Curso, Estado…
+    RequestController->>Postgres: SELECT requests (todos campos CSV) WHERE prazo_em < now()
+    Postgres-->>RequestController: rows completas (Número, Tipo, Aluno, GRR, Curso, Estado, Prazo)
     RequestController-->>WebApp: 200 Content-Type: text/csv (stream download)
     WebApp-->>Secretaria: download .csv disparado no browser
 ```
@@ -275,11 +275,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
@@ -287,7 +287,7 @@ sequenceDiagram
 
     Secretaria->>WebApp: confirma wizard com onBehalfOf=alunoId (outro curso)
     WebApp->>JwtFilter: POST /requests {tipo, dados, onBehalfOf: alunoId} (Bearer)
-    JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.internal_ope…
+    JwtFilter->>RequestController: repassa (secretariaId, cursoIds[], request.internal_open ✓)
     RequestController->>Postgres: SELECT usuario(alunoId).curso_id
     Postgres-->>RequestController: curso_id NOT IN cursoIds[]
     RequestController-->>WebApp: 403 Problem Details (forbidden_scope)
@@ -312,22 +312,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant RequestController
         participant Postgres
     end
 
-    Secretaria->>WebApp: confirma PATCH /requests/{id}/deliberate (tipo requer s…
-    WebApp->>JwtFilter: PATCH /requests/{id}/deliberate {decisao, justificativa…
-    JwtFilter->>RequestController: repassa (secretariaId, authorities[request.deliberate] …
-    RequestController->>Postgres: SELECT request_type.requires_capability WHERE id=reques…
+    Secretaria->>WebApp: confirma PATCH /requests/{id}/deliberate (tipo requer senior_secretary)
+    WebApp->>JwtFilter: PATCH /requests/{id}/deliberate {decisao, justificativa}
+    JwtFilter->>RequestController: repassa (secretariaId, authorities[request.deliberate] ✓)
+    RequestController->>Postgres: SELECT request_type.requires_capability WHERE id=requestTypeId
     Postgres-->>RequestController: {requires_capability: senior_secretary}
-    RequestController-->>WebApp: 403 Problem Details (insufficient_authority — senior_se…
+    RequestController-->>WebApp: 403 Problem Details (insufficient_authority — senior_secretary)
     WebApp-->>Secretaria: DS/AlertBanner — ação requer permissão adicional
 ```
 

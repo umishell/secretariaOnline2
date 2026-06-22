@@ -138,21 +138,31 @@ Mermaid **não quebra linha por padrão** — labels longos podem ser **clipados
 
 **⚠️ Não use `<br/>` em labels de mensagem** — no preview Cursor o texto multilinha é desenhado **em cima** da seta horizontal (overlap) e, na primeira mensagem, **sobre** os boxes dos participantes. Detalhe em **Notas** markdown.
 
-**Estratégia SO2 (preview Cursor + GitHub):**
+**Estratégia SO2 (`sequenceDiagrams/` + mermaid.live):**
 
 | Prioridade | Técnica | Quando |
 |:----------:|---------|--------|
-| 1 | **Label single-line ≤ ~58 chars** | Sempre — uma linha por seta |
-| 2 | **Abreviar** | Payload JSON/RFC 7807 → `200 {…}` ou shorthand |
+| 1 | **Labels completos** (sem cortar com `…`) | Sempre — wrap via `mermaid-live-config.json` |
+| 2 | **Abreviar só payload JSON** | `200 {…}` / `403 {…}` quando o corpo é grande; detalhe em **Notas** |
 | 3 | **Self-call espaçador** | 1ª seta é `WebApp->>API` sem mensagem humana antes → prepend `WebApp->>WebApp: monta contexto da tela` |
-| 4 | **Notas** markdown | JWT, SQL completo, HATEOAS detalhado |
+| 4 | **Notas** markdown | SQL completo, RFC 7807, HATEOAS campo a campo |
 
 ```
-✓ WebApp->>SearchController: GET /search?q=João&limit=5 (Bearer)
-✓ SearchController-->>WebApp: 200 {…}
-✓ WebApp->>WebApp: monta contexto da tela   ← antes da 1ª chamada HTTP “seca”
-✗ GET /search?q=João<br/>(Bearer; JwtFilter)  ← overlap seta + actors
-✗ %%{init: { "sequence": { "wrap": true } } }%%
+✓ JwtFilter->>DashboardBFF: repassa (secretariaId, cursoIds[], dashboard.view_secretary ✓)
+✓ DashboardBFF-->>WebApp: 200 {…}
+✗ dashboard.view_secre…   ← truncamento artificial (perdeu texto na geração)
+✗ %%{init}%% / <br/> em labels
+```
+
+#### Diagramas em `sequenceDiagrams/` (mermaid.live)
+
+Um bloco ` ```mermaid ` por diagrama — sintaxe **mermaid.live** (`box #e8f4fc` / `#fff8ee` opacos). Config global em [`mermaid-live-config.json`](../../foundationDocs/sequenceDiagrams/mermaid-live-config.json) (aba **Config** do live editor; `wrap: true`). **Sem** `%%{init}%%` inline, **sem** `<br/>`, **sem** duplicata Cursor/export.
+
+```
+✓ box #e8f4fc Cliente / box #fff8ee Servidor
+✓ WebApp->>API: GET /path (Bearer)
+✗ box rgba(...) — transparente (gap sem fundo no live)
+✗ par canônico + Export mermaid.live duplicados
 ```
 
 #### Layout & readability — avoid overlapping elements (mandatory)
@@ -161,15 +171,15 @@ Mermaid renders labels **on** the arrow path; `Note`, quebras manuais excessivas
 
 | Overlap risk | Symptom | Fix |
 |--------------|---------|-----|
-| **Label clipado nas bordas do frame** | Texto some à esquerda/direita do SVG | Abreviar; detalhe em **Notas** — **não** `<br/>` |
-| **`<br/>` em label de mensagem** | Texto sobrepõe seta e boxes dos actors | Single-line ≤58 chars; remover `<br/>` |
+| **Label clipado nas bordas do frame** | Texto some à esquerda/direita do SVG | Wrap via `mermaid-live-config.json`; labels **completos** — não truncar com `…` |
+| **Truncamento artificial `…` mid-word** | `view_secre…`, `QuickT…` | Restaurar texto completo; só `200 {…}` para JSON volumoso |
 | **`actor` + first message from human** | Nome (ex.: "Egresso") **sobrepõe** label da 1ª seta | **`participant`** em vez de `actor` — nome fica **acima** da lifeline; seta abaixo |
 | `Note over X` adjacent to message involving `X` | Arrowhead lands on note box | **Remove `Note`** — put detail in markdown **Notas** below the diagram |
 | `Note` + `activate` on same lifeline | Activation bar crosses note/label | Use **either** `activate` **or** `Note`, not both; prefer neither in docs |
 | Consecutive `A->>A` self-calls (≥2) | Labels pile on one column | **Merge** into one step: `verify JWT + check capability → denied` |
 | Long JSON / Problem Details in arrow | Label wider than span between participants | Show `403 Problem Details (access_denied)` — full body in **Notas** |
 | `Note over A,B` between `A->>B` and `B-->>A` | Return arrow crosses note | Move note to **Notas** or prefix the message: `[JWT ok] GET /path` |
-| `box` + 6+ participants + `autonumber` | Crowded lifelines | Drop `box` **or** reduce participants **or** split diagram |
+| `autonumber` + label na seta | Círculo sobrepõe texto ou texto sobrepõe linha | **Não** usar NBSP nos `.md`; export: `mermaid-export.css` (`translateY`) + `mermaid-live-config.json` |
 | UI render text in last message | Long trailing label overlaps actor | Abreviar — UI detail in **Notas** |
 
 **Human participant rule (critical):**
@@ -253,8 +263,9 @@ Before delivering:
 - [ ] Title + scope paragraph accompany the diagram
 - [ ] Terminology matches project (Use Case, not "service layer" generically)
 
-**Layout (no clipping / no overlapping elements):**
+**Layout (diagramas SO2):**
 
+- [ ] **Labels completos** nas setas (sem `…` mid-word); wrap via `mermaid-live-config.json`
 - [ ] **Sem `%%{init}%%`** e **sem `<br/>`** em labels de mensagem
 - [ ] Labels single-line ≤ ~58 chars (abreviar ou **Notas**)
 - [ ] 1ª seta `WebApp->>API` “seca” precedida de `WebApp->>WebApp: monta contexto da tela` se não houver ação humana antes

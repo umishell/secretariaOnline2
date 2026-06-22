@@ -69,14 +69,14 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Acessa /admin/templates-comunicacao
-    WebApp->>CTController: GET /communication-templates?page=0 (Bearer, communicat…
+    WebApp->>CTController: GET /communication-templates?page=0 (Bearer, communication.manage_templates ✓)
     CTController->>ListTemplatesUC: execute(query, Pageable)
     ListTemplatesUC->>Postgres: SELECT comm_template {id, nome, canal, currentVersion}
     Postgres-->>ListTemplatesUC: Page<CommTemplateEntity>
     ListTemplatesUC-->>CTController: Page<CommTemplateDto> + _links
     CTController-->>WebApp: 200 [{id, nome, canal, currentVersion, _links}]
     Admin->>WebApp: Seleciona "aproveitamento.deferido"
-    WebApp->>CTController: GET /communication-templates/:id/versions (Bearer, comm…
+    WebApp->>CTController: GET /communication-templates/:id/versions (Bearer, communication.manage_templates ✓)
     CTController->>GetTemplateUC: execute(templateId)
     GetTemplateUC->>Postgres: SELECT template + versions BY id (ORDER BY versao DESC)
     Postgres-->>GetTemplateUC: CommTemplateEntity + revisoes[]
@@ -110,14 +110,14 @@ sequenceDiagram
     participant CreateTemplateUC as CreateTemplateUseCase
     participant Postgres
 
-    Admin->>WebApp: Clica "Novo template" → preenche nome, assunto, corpo, …
-    WebApp->>CTController: POST /communication-templates (Bearer, communication.ma…
+    Admin->>WebApp: Clica "Novo template" → preenche nome, assunto, corpo, canal
+    WebApp->>CTController: POST /communication-templates (Bearer, communication.manage_templates ✓)
     CTController->>CreateTemplateUC: execute(CreateTemplateCommand)
     CreateTemplateUC->>Postgres: SELECT comm_template BY nome (unicidade)
     Postgres-->>CreateTemplateUC: null (novo)
     CreateTemplateUC->>Postgres: BEGIN TX
     CreateTemplateUC->>Postgres: INSERT comm_template {nome, canal, variaveis}
-    CreateTemplateUC->>Postgres: INSERT comm_template_revision {assunto, corpo, versao=1…
+    CreateTemplateUC->>Postgres: INSERT comm_template_revision {assunto, corpo, versao=1, status='CURRENT'}
     CreateTemplateUC->>Postgres: INSERT audit_log {acao='CREATE_TEMPLATE', operadorId}
     CreateTemplateUC->>Postgres: COMMIT
     CreateTemplateUC-->>CTController: CommTemplateDto + _links
@@ -150,13 +150,13 @@ sequenceDiagram
     participant SaveRevisionUC as SaveRevisionUseCase
     participant Postgres
 
-    Admin->>WebApp: Edita corpo / assunto no DS/MarkdownEditor → clica "Sal…
-    WebApp->>CTController: POST /communication-templates/:id/revisions (Bearer, co…
+    Admin->>WebApp: Edita corpo / assunto no DS/MarkdownEditor → clica "Salvar"
+    WebApp->>CTController: POST /communication-templates/:id/revisions (Bearer, communication.manage_templates ✓)
     CTController->>SaveRevisionUC: execute(templateId, delta, operadorId)
     SaveRevisionUC->>Postgres: BEGIN TX
-    SaveRevisionUC->>Postgres: UPDATE comm_template_revision SET status='ARCHIVED' WHE…
-    SaveRevisionUC->>Postgres: INSERT comm_template_revision {assunto, corpo, versao=N…
-    SaveRevisionUC->>Postgres: INSERT audit_log {acao='SAVE_REVISION', operadorId, ver…
+    SaveRevisionUC->>Postgres: UPDATE comm_template_revision SET status='ARCHIVED' WHERE templateId AND status='CURRENT'
+    SaveRevisionUC->>Postgres: INSERT comm_template_revision {assunto, corpo, versao=N+1, status='CURRENT'}
+    SaveRevisionUC->>Postgres: INSERT audit_log {acao='SAVE_REVISION', operadorId, versao=N+1}
     SaveRevisionUC->>Postgres: COMMIT
     SaveRevisionUC-->>CTController: RevisionDto {versao=N+1, status='CURRENT', criadoEm}
     CTController-->>WebApp: 200 {revisao: N+1, status='CURRENT', criadoEm}
@@ -189,13 +189,13 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Clica na versão 1 no histórico (status='ARCHIVED')
-    WebApp->>CTController: GET /communication-templates/:id/versions/1 (Bearer, co…
+    WebApp->>CTController: GET /communication-templates/:id/versions/1 (Bearer, communication.manage_templates ✓)
     CTController->>GetRevisionUC: execute(templateId, revisao=1)
     GetRevisionUC->>Postgres: SELECT comm_template_revision BY templateId AND versao=1
-    Postgres-->>GetRevisionUC: RevisionEntity {assunto, corpo, versao=1, status='ARCHI…
+    Postgres-->>GetRevisionUC: RevisionEntity {assunto, corpo, versao=1, status='ARCHIVED'}
     GetRevisionUC-->>CTController: RevisionDto {corpo, assunto, versao=1, status='ARCHIVED'}
     CTController-->>WebApp: 200 {…}
-    WebApp-->>Admin: Editor readonly; banner "Versão 1 — somente leitura"; "…
+    WebApp-->>Admin: Editor readonly; banner "Versão 1 — somente leitura"; "Restaurar versão atual"
 ```
 
 **Notas:**
@@ -222,7 +222,7 @@ sequenceDiagram
     participant CTController as CommTemplateController
 
     Admin->>WebApp: Acessa /admin/templates-comunicacao
-    WebApp->>CTController: GET /communication-templates (Bearer, communication.man…
+    WebApp->>CTController: GET /communication-templates (Bearer, communication.manage_templates ✗)
     CTController->>CTController: verify JWT + check communication.manage_templates → denied
     CTController-->>WebApp: 403 Problem Details (access_denied)
     WebApp-->>Admin: Redirect /erro/403

@@ -63,11 +63,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FirstAccessController
         participant FirstAccessUseCase
@@ -75,14 +75,14 @@ sequenceDiagram
     end
 
     Aluno->>WebApp: clica "Continuar" (senha forte + LGPD marcado ✓)
-    WebApp->>JwtFilter: POST /auth/first-access {novaSenha, aceiteTermos:true} …
+    WebApp->>JwtFilter: POST /auth/first-access {novaSenha, aceiteTermos:true} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + auth.first_access ✓
     JwtFilter->>FirstAccessController: repassa (usuarioId, novaSenha, aceiteTermos, ip, ua)
     FirstAccessController->>FirstAccessUseCase: execute(cmd)
-    FirstAccessUseCase->>Postgres: BEGIN; SELECT senha_hash_temp FROM usuario WHERE id=usu…
+    FirstAccessUseCase->>Postgres: BEGIN; SELECT senha_hash_temp FROM usuario WHERE id=usuarioId
     Postgres-->>FirstAccessUseCase: usuario {senha_hash_temp, senha_alterada=false}
-    FirstAccessUseCase->>Postgres: UPDATE usuario SET senha_hash=Argon2id(novaSenha), senh…
-    FirstAccessUseCase->>Postgres: INSERT audit_log(iam.first_access_completed, usuarioId,…
+    FirstAccessUseCase->>Postgres: UPDATE usuario SET senha_hash=Argon2id(novaSenha), senha_alterada=true, aceite_lgpd_em=now()
+    FirstAccessUseCase->>Postgres: INSERT audit_log(iam.first_access_completed, usuarioId, ip, ua) + COMMIT
     FirstAccessController-->>WebApp: 200 OK {message: "Primeiro acesso concluído"}
     WebApp->>WebApp: limpa mustChangePassword na store + habilita sidebar
     WebApp-->>Aluno: redireciona para /inicio
@@ -106,14 +106,14 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
 
     Aluno->>WebApp: acessa /inicio (URL direta ou link)
     WebApp->>WebApp: PrivateRoute verifica mustChangePassword=true → bloqueia
-    WebApp-->>Aluno: redirect para /primeiro-acesso (estado do formulário pr…
+    WebApp-->>Aluno: redirect para /primeiro-acesso (estado do formulário preservado)
 ```
 
 **Notas:**
@@ -134,11 +134,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant FirstAccessController
         participant FirstAccessUseCase
@@ -146,15 +146,15 @@ sequenceDiagram
     end
 
     Aluno->>WebApp: clica "Continuar" (novaSenha = senhaTemporaria)
-    WebApp->>JwtFilter: POST /auth/first-access {novaSenha, aceiteTermos:true} …
+    WebApp->>JwtFilter: POST /auth/first-access {novaSenha, aceiteTermos:true} (Bearer)
     JwtFilter->>JwtFilter: valida JWT + auth.first_access ✓
     JwtFilter->>FirstAccessController: repassa (usuarioId, novaSenha, aceiteTermos)
     FirstAccessController->>FirstAccessUseCase: execute(cmd)
-    FirstAccessUseCase->>Postgres: BEGIN; SELECT senha_hash_temp FROM usuario WHERE id=usu…
+    FirstAccessUseCase->>Postgres: BEGIN; SELECT senha_hash_temp FROM usuario WHERE id=usuarioId
     Postgres-->>FirstAccessUseCase: usuario {senha_hash_temp}
     FirstAccessUseCase->>Postgres: ROLLBACK (Argon2id.verify → novaSenha == senhaTemporaria)
     FirstAccessController-->>WebApp: 422 Problem Details (type: senha_reutilizada)
-    WebApp-->>Aluno: DS/Input error "A nova senha não pode ser igual à senha…
+    WebApp-->>Aluno: DS/Input error "A nova senha não pode ser igual à senha temporária."
 ```
 
 **Notas:**

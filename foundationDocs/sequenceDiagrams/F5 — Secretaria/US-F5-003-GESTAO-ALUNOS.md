@@ -58,23 +58,23 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
     end
 
     Secretaria->>WebApp: acessa /secretaria/alunos + digita "João" na busca
-    WebApp->>JwtFilter: GET /students?q=João&page=0&size=20 (Bearer, user.manag…
+    WebApp->>JwtFilter: GET /students?q=João&page=0&size=20 (Bearer, user.manage_students ✓)
     JwtFilter->>StudentController: repassa (secretariaId, cursoIds[])
-    StudentController->>Postgres: SELECT usuario WHERE (nome ILIKE %João% OR grr=... OR e…
+    StudentController->>Postgres: SELECT usuario WHERE (nome ILIKE %João% OR grr=... OR email ILIKE)
     Postgres-->>StudentController: {content[], totalElements, _links por item}
     StudentController-->>WebApp: 200 {content, page, _links}
-    WebApp-->>Secretaria: DataTable (Nome, GRR, Curso, Período, Situação + ações …
+    WebApp-->>Secretaria: DataTable (Nome, GRR, Curso, Período, Situação + ações HATEOAS)
 ```
 
 **Notas:**
@@ -95,27 +95,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
     end
 
     Secretaria->>WebApp: clica "Novo aluno" + preenche Drawer + confirma
-    WebApp->>JwtFilter: POST /students {nome, grr, cpf, email, curso, periodo, …
+    WebApp->>JwtFilter: POST /students {nome, grr, cpf, email, curso, periodo, situacao}
     JwtFilter->>StudentController: repassa (secretariaId, cursoIds[], user.manage_students ✓)
     StudentController->>StudentController: gera senha temp (12 chars) + Argon2id hash
     StudentController->>Postgres: BEGIN TX
-    StudentController->>Postgres: INSERT usuario(grr, cpf, email, senha_hash, mustChangeP…
-    StudentController->>Postgres: INSERT audit_log(user.create, operadorId=secretariaId, …
-    StudentController->>Postgres: INSERT outbox_event(iam.student_created — email boas-vi…
+    StudentController->>Postgres: INSERT usuario(grr, cpf, email, senha_hash, mustChangePassword=true)
+    StudentController->>Postgres: INSERT audit_log(user.create, operadorId=secretariaId, targetUserId)
+    StudentController->>Postgres: INSERT outbox_event(iam.student_created — email boas-vindas)
     StudentController->>Postgres: COMMIT
     StudentController-->>WebApp: 201 {id, grr, nome, _links}
-    WebApp-->>Secretaria: Drawer fecha + linha adicionada (dispatch async → link …
+    WebApp-->>Secretaria: Drawer fecha + linha adicionada (dispatch async → link 10.1b)
 ```
 
 **Notas:**
@@ -136,25 +136,25 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
     end
 
-    Secretaria->>WebApp: clica "Editar" na linha + altera campo(s) no Drawer + c…
-    WebApp->>JwtFilter: PATCH /students/{id} {periodo: 3} (Bearer, user.manage_…
+    Secretaria->>WebApp: clica "Editar" na linha + altera campo(s) no Drawer + confirma
+    WebApp->>JwtFilter: PATCH /students/{id} {periodo: 3} (Bearer, user.manage_students ✓)
     JwtFilter->>StudentController: repassa (secretariaId, cursoIds[], user.manage_students ✓)
     StudentController->>Postgres: BEGIN TX
-    StudentController->>Postgres: UPDATE usuario SET periodo=3 WHERE id={id} AND curso_id…
-    StudentController->>Postgres: INSERT audit_log(user.update, operadorId=secretariaId, …
+    StudentController->>Postgres: UPDATE usuario SET periodo=3 WHERE id={id} AND curso_id IN cursoIds[]
+    StudentController->>Postgres: INSERT audit_log(user.update, operadorId=secretariaId, diff)
     StudentController->>Postgres: COMMIT
     StudentController-->>WebApp: 200 {usuario, _links}
-    WebApp-->>Secretaria: Drawer fecha + linha atualizada (invalidateQueries[stud…
+    WebApp-->>Secretaria: Drawer fecha + linha atualizada (invalidateQueries[students])
 ```
 
 **Notas:**
@@ -175,27 +175,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
     end
 
     Secretaria->>WebApp: clica "Reset senha" + confirma dialog
-    WebApp->>JwtFilter: POST /students/{id}/reset-password (Bearer, user.manage…
+    WebApp->>JwtFilter: POST /students/{id}/reset-password (Bearer, user.manage_students ✓)
     JwtFilter->>StudentController: repassa (secretariaId, cursoIds[], user.manage_students ✓)
     StudentController->>StudentController: gera senha temp (12 chars) + Argon2id hash
     StudentController->>Postgres: BEGIN TX
-    StudentController->>Postgres: UPDATE usuario SET senha_hash=Argon2id(...), mustChange…
-    StudentController->>Postgres: INSERT audit_log(user.password_reset, operadorId=secret…
-    StudentController->>Postgres: INSERT outbox_event(iam.password_reset_by_admin — email…
+    StudentController->>Postgres: UPDATE usuario SET senha_hash=Argon2id(...), mustChangePassword=true
+    StudentController->>Postgres: INSERT audit_log(user.password_reset, operadorId=secretariaId)
+    StudentController->>Postgres: INSERT outbox_event(iam.password_reset_by_admin — email)
     StudentController->>Postgres: COMMIT
     StudentController-->>WebApp: 200 {message: senha_reset_ok}
-    WebApp-->>Secretaria: toast "E-mail enviado ao aluno" (dispatch async → link …
+    WebApp-->>Secretaria: toast "E-mail enviado ao aluno" (dispatch async → link 10.1b)
 ```
 
 **Notas:**
@@ -217,24 +217,24 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
     end
 
     Secretaria->>WebApp: clica "Matricular" + seleciona disciplinas + confirma
-    WebApp->>JwtFilter: POST /students/{id}/matricula {disciplinaIds: [id1, id2…
+    WebApp->>JwtFilter: POST /students/{id}/matricula {disciplinaIds: [id1, id2]}
     JwtFilter->>StudentController: repassa (secretariaId, user.manage_students ✓)
-    StudentController->>Postgres: SELECT disciplina WHERE id IN (ids) AND vagas_disponive…
+    StudentController->>Postgres: SELECT disciplina WHERE id IN (ids) AND vagas_disponiveis > 0
     Postgres-->>StudentController: disciplinas disponíveis validadas
     StudentController->>Postgres: BEGIN TX
-    StudentController->>Postgres: INSERT matricula(alunoId, disciplinaId) + UPDATE vagas_…
-    StudentController->>Postgres: INSERT audit_log(user.matricula, operadorId, disciplina…
+    StudentController->>Postgres: INSERT matricula(alunoId, disciplinaId) + UPDATE vagas_disponiveis
+    StudentController->>Postgres: INSERT audit_log(user.matricula, operadorId, disciplinaIds)
     StudentController->>Postgres: COMMIT
     StudentController-->>WebApp: 201 {matriculas[], _links}
     WebApp-->>Secretaria: Drawer fecha + matrícula confirmada
@@ -258,11 +258,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
@@ -273,7 +273,7 @@ sequenceDiagram
     JwtFilter->>StudentController: repassa (secretariaId, user.manage_students ✓)
     StudentController->>Postgres: INSERT usuario (grr=20231234)
     Postgres-->>StudentController: 23505 unique_violation (constraint: usuario_grr_key)
-    StudentController-->>WebApp: 409 Problem Details (conflict — field: grr, value: 2023…
+    StudentController-->>WebApp: 409 Problem Details (conflict — field: grr, value: 20231234)
     WebApp-->>Secretaria: erro inline no campo GRR — "GRR já cadastrado"
 ```
 
@@ -295,22 +295,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
         participant Postgres
     end
 
     Secretaria->>WebApp: confirma Drawer de matrícula com disciplina sem vagas
-    WebApp->>JwtFilter: POST /students/{id}/matricula {disciplinaIds: [id_sem_v…
+    WebApp->>JwtFilter: POST /students/{id}/matricula {disciplinaIds: [id_sem_vagas]}
     JwtFilter->>StudentController: repassa (secretariaId, user.manage_students ✓)
-    StudentController->>Postgres: SELECT disciplina WHERE id=id_sem_vagas AND vagas_dispo…
+    StudentController->>Postgres: SELECT disciplina WHERE id=id_sem_vagas AND vagas_disponiveis > 0
     Postgres-->>StudentController: {vagas_disponiveis: 0} — sem resultado
-    StudentController-->>WebApp: 422 Problem Details (no_vacancies — disciplinaId: id_se…
+    StudentController-->>WebApp: 422 Problem Details (no_vacancies — disciplinaId: id_sem_vagas)
     WebApp-->>Secretaria: DS/AlertBanner "Disciplina sem vagas disponíveis"
 ```
 
@@ -332,19 +332,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant OutroUsuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant StudentController
     end
 
     OutroUsuario->>WebApp: acessa /secretaria/alunos (sem user.manage_students)
     WebApp->>JwtFilter: GET /students (Bearer)
-    JwtFilter->>StudentController: repassa (userId, authorities[] — user.manage_students a…
-    StudentController-->>WebApp: 403 Problem Details (access_denied — user.manage_studen…
+    JwtFilter->>StudentController: repassa (userId, authorities[] — user.manage_students ausente)
+    StudentController-->>WebApp: 403 Problem Details (access_denied — user.manage_students)
     WebApp-->>OutroUsuario: redireciona para /inicio do perfil correto
 ```
 

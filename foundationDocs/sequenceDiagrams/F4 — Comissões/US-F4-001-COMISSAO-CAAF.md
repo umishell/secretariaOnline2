@@ -48,26 +48,26 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
         participant RQ as TanStack Query
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as CAAFController
         participant UC as GetCAAFDashboardUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: Navega para /comissoes/caaf
     WebApp->>RQ: useQuery(['caaf','dashboard'])
-    RQ->>CTRL: GET /commissions/caaf/dashboard (Bearer, formative.revi…
+    RQ->>CTRL: GET /commissions/caaf/dashboard (Bearer, formative.review ✓)
     CTRL->>UC: execute(userId, cursoIds)
-    UC->>DB: SELECT formative_entries WHERE (assignee IS NULL OR ass…
+    UC->>DB: SELECT formative_entries WHERE (assignee IS NULL OR assignee=userId)
     DB-->>UC: items[]
-    UC->>DB: SELECT COUNT pool, assigned_to_me, avg_deadline, approv…
+    UC->>DB: SELECT COUNT pool, assigned_to_me, avg_deadline, approved_today
     DB-->>UC: KpiRow data
     UC-->>CTRL: CAAFDashboardDto {kpis, items, _links}
     CTRL-->>RQ: 200 {kpis, items, _links}
@@ -93,30 +93,30 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as CAAFController
         participant UC as AssignFormativeUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: Clica "Atribuir a mim" (_links.assign-member ✓)
-    WebApp->>CTRL: POST /commissions/caaf/assign {itemId, assigneeId: self…
+    WebApp->>CTRL: POST /commissions/caaf/assign {itemId, assigneeId: self}
     CTRL->>UC: execute(AssignCommand{itemId, assigneeId=self})
-    UC->>DB: SELECT formative_entry BY itemId (curso scope ✓, assign…
+    UC->>DB: SELECT formative_entry BY itemId (curso scope ✓, assignee IS NULL)
     DB-->>UC: FormativeEntry (disponível)
     UC->>DB: BEGIN TX
-    UC->>DB: UPDATE formative_entry SET assignee_id=self, estado='EM…
-    UC->>DB: INSERT outbox_event(type='formativas.assigned', payload…
+    UC->>DB: UPDATE formative_entry SET assignee_id=self, estado='EM_REVISAO'
+    UC->>DB: INSERT outbox_event(type='formativas.assigned', payload={…})
     UC->>DB: COMMIT
     UC-->>CTRL: FormativeEntry updated + _links
     CTRL-->>WebApp: 200 {item, _links}
-    WebApp-->>Professor: Badge muda para "Comigo", KPI "Atribuídas a mim" increm…
+    WebApp-->>Professor: Badge muda para "Comigo", KPI "Atribuídas a mim" incrementa
 ```
 
 **Notas:**
@@ -137,31 +137,31 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as CAAFController
         participant MUC as GetCAAFMembersUC
         participant AUC as AssignFormativeUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: Clica "Atribuir..." na linha (_links.assign-member ✓)
-    WebApp->>CTRL: GET /commissions/caaf/members?cursoId=X (Bearer, format…
+    WebApp->>CTRL: GET /commissions/caaf/members?cursoId=X (Bearer, formative.review ✓)
     CTRL->>MUC: execute(cursoId)
-    MUC->>DB: SELECT users JOIN commission_members WITH load=COUNT(as…
+    MUC->>DB: SELECT users JOIN commission_members WITH load=COUNT(assignee_id)
     DB-->>MUC: members[] {id, nome, load}
     MUC-->>CTRL: CAAFMembersDto
     CTRL-->>WebApp: 200 {members: [{id, nome, load}]}
-    WebApp-->>Professor: DS/AssignmentBoard abre (membro maior carga recebe DS/B…
+    WebApp-->>Professor: DS/AssignmentBoard abre (membro maior carga recebe DS/Badge warning)
     Professor->>WebApp: Seleciona colega + clica "Confirmar"
-    WebApp->>CTRL: POST /commissions/caaf/assign {itemId, assigneeId: cole…
+    WebApp->>CTRL: POST /commissions/caaf/assign {itemId, assigneeId: colega}
     CTRL->>AUC: execute(AssignCommand{itemId, assigneeId=colega})
-    AUC->>DB: BEGIN TX; UPDATE formative_entry SET assignee_id=colega…
+    AUC->>DB: BEGIN TX; UPDATE formative_entry SET assignee_id=colega; INSERT outbox
     AUC-->>CTRL: FormativeEntry updated
     CTRL-->>WebApp: 200 {item, _links}
     WebApp-->>Professor: Overlay fecha, badge da linha atualiza com nome do colega
@@ -185,31 +185,31 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as CAAFController
         participant UC as BatchDecideFormativesUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
-    Professor->>WebApp: Confirma modal "Aprovar N atividades de evento com pres…
-    WebApp->>CTRL: POST /commissions/caaf/batch-decide {ids:[...N], decisa…
-    CTRL->>UC: execute(BatchDecideCommand{ids, decisao=APROVADA, decid…
+    Professor->>WebApp: Confirma modal "Aprovar N atividades de evento com presença validada"
+    WebApp->>CTRL: POST /commissions/caaf/batch-decide {ids:[...N], decisao=APROVADA}
+    CTRL->>UC: execute(BatchDecideCommand{ids, decisao=APROVADA, decidedBy=userId})
     UC->>DB: SELECT formative_entries WHERE id IN (ids) FOR UPDATE
     DB-->>UC: N entries (all tipo=PRESENCA_VALIDADA, curso scope ✓)
     UC->>DB: BEGIN TX
-    UC->>DB: UPDATE formative_entries SET estado='APROVADA', decided…
-    UC->>DB: INSERT formative_entry_event_log FOR EACH id (individua…
-    UC->>DB: INSERT outbox_event(type='formativas.batch_approved', p…
+    UC->>DB: UPDATE formative_entries SET estado='APROVADA', decided_by=userId
+    UC->>DB: INSERT formative_entry_event_log FOR EACH id (individual)
+    UC->>DB: INSERT outbox_event(type='formativas.batch_approved', payload={…})
     UC->>DB: COMMIT
     UC-->>CTRL: BatchDecideResult {approved: N, certsPending: N}
     CTRL-->>WebApp: 200 {approved: N, certsPending: N, _links}
-    WebApp-->>Professor: DS/AlertBanner success "N atividades aprovadas. Certifi…
+    WebApp-->>Professor: DS/AlertBanner success "N atividades aprovadas. Certificados pendentes"
 ```
 
 **Notas:**
@@ -230,15 +230,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as CAAFController
         participant UC as AssignFormativeUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
@@ -249,14 +249,14 @@ sequenceDiagram
     WebApp-->>Professor: Redireciona para /inicio (link nunca aparece no sidebar)
 
     Professor->>WebApp: POST assign com itemId de outro curso (bypass manual)
-    WebApp->>CTRL: POST /commissions/caaf/assign {itemId, assigneeId} (Bea…
+    WebApp->>CTRL: POST /commissions/caaf/assign {itemId, assigneeId} (Bearer)
     CTRL->>UC: execute(AssignCommand)
     UC->>DB: SELECT formative_entry BY itemId WITH curso_id
     DB-->>UC: FormativeEntry {curso_id: Y}
-    UC->>UC: check curso_id Y ∉ professor.caaf.cursoIds → scope viol…
+    UC->>UC: check curso_id Y ∉ professor.caaf.cursoIds → scope violation
     UC-->>CTRL: 403 course_scope_violation
     CTRL-->>WebApp: 403 Problem Details (course_scope_violation)
-    WebApp-->>Professor: DS/AlertBanner error "Acesso negado — item fora do esco…
+    WebApp-->>Professor: DS/AlertBanner error "Acesso negado — item fora do escopo"
 ```
 
 **Notas:**
@@ -277,27 +277,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Cliente
+    box #f4f4f4 Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) API
+    box #f4f4f4 API
         participant CTRL as CAAFController
         participant UC as BatchDecideFormativesUC
     end
-    box rgba(245,240,255,0.3) Infra
+    box #f4f4f4 Infra
         participant DB as Postgres
     end
 
     Professor->>WebApp: POST batch-decide (bypass UI — tipos mistos)
-    WebApp->>CTRL: POST /commissions/caaf/batch-decide {ids:[...mixed], de…
+    WebApp->>CTRL: POST /commissions/caaf/batch-decide {ids:[...mixed], decisao=APROVADA}
     CTRL->>UC: execute(BatchDecideCommand{ids, decisao=APROVADA})
-    UC->>DB: SELECT formative_entries WHERE id IN (ids) — verificar …
+    UC->>DB: SELECT formative_entries WHERE id IN (ids) — verificar tipos
     DB-->>UC: entries (inclui tipo=COMPROVANTE_MANUAL)
-    UC->>UC: check todos ids tipo=PRESENCA_VALIDADA → falha (tipo in…
+    UC->>UC: check todos ids tipo=PRESENCA_VALIDADA → falha (tipo incompatível)
     UC-->>CTRL: 422 incompatible_activity_type {invalidIds: [...]}
     CTRL-->>WebApp: 422 Problem Details (incompatible_activity_type)
-    WebApp-->>Professor: DS/AlertBanner error "Tipo de atividade incompatível — …
+    WebApp-->>Professor: DS/AlertBanner error "Tipo de atividade incompatível — selecione apenas presença validada"
 ```
 
 **Notas:**

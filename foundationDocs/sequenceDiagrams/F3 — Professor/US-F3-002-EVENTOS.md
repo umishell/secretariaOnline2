@@ -60,11 +60,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant CreateEventUC as CreateEventUseCase
@@ -77,7 +77,7 @@ sequenceDiagram
     JwtFilter->>EventController: repassa (professorId)
     EventController->>CreateEventUC: execute(CreateEventCommand)
     CreateEventUC->>Postgres: BEGIN TX
-    CreateEventUC->>Postgres: INSERT event (AGENDADO, attendanceMode, windows[], chCr…
+    CreateEventUC->>Postgres: INSERT event (AGENDADO, attendanceMode, windows[], chCreditadas)
     CreateEventUC->>Postgres: COMMIT
     CreateEventUC-->>EventController: EventDto
     EventController-->>WebApp: 201 {…}
@@ -102,11 +102,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant GetEventUC as GetEventUseCase
@@ -122,7 +122,7 @@ sequenceDiagram
     Postgres-->>GetEventUC: EventEntity (estado=CONCLUIDO)
     GetEventUC-->>EventController: EventDto + _links: [] (CONCLUIDO: sem editar, sem excluir)
     EventController-->>WebApp: 200 {evento, estado: CONCLUIDO, _links: []}
-    WebApp-->>Professor: formulário read-only + DS/AlertBanner info "Evento conc…
+    WebApp-->>Professor: formulário read-only + DS/AlertBanner info "Evento concluído — somente leitura."
 ```
 
 **Notas:**
@@ -143,18 +143,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant AttendanceWindowUC as AttendanceWindowUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: clica "Abrir janela entrada" (_links.abrir-janela-entra…
+    Professor->>WebApp: clica "Abrir janela entrada" (_links.abrir-janela-entrada ✓)
     WebApp->>JwtFilter: POST /events/{id}/attendance/windows/entry (Bearer)
     JwtFilter->>JwtFilter: valida JWT + event.host ✓
     JwtFilter->>EventController: repassa
@@ -192,29 +192,29 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant AttendanceWindowUC as AttendanceWindowUseCase
         participant Postgres
     end
 
-    Professor->>WebApp: clica "Abrir janela saída" (SECRET_DUAL, entrada conclu…
+    Professor->>WebApp: clica "Abrir janela saída" (SECRET_DUAL, entrada concluída)
     WebApp->>JwtFilter: POST /events/{id}/attendance/windows/exit (Bearer)
     JwtFilter->>JwtFilter: valida JWT + event.host ✓
     JwtFilter->>EventController: repassa
     EventController->>AttendanceWindowUC: execute(openExit, eventId)
     AttendanceWindowUC->>Postgres: SELECT event + entryWindow WHERE completed=true
     Postgres-->>AttendanceWindowUC: EntryWindow OK
-    AttendanceWindowUC->>Postgres: INSERT attendance_window (phase=EXIT, exitPin=event.exi…
+    AttendanceWindowUC->>Postgres: INSERT attendance_window (phase=EXIT, exitPin=event.exitPin)
     Postgres-->>AttendanceWindowUC: windowId
     AttendanceWindowUC-->>EventController: WindowDto (exitPin)
     EventController-->>WebApp: 200 {windowId, exitPin, _links: [encerrar-evento]}
-    WebApp-->>Professor: DS/PINDisplay(exitPin, mono 32px) + lista de inelegívei…
+    WebApp-->>Professor: DS/PINDisplay(exitPin, mono 32px) + lista de inelegíveis
 ```
 
 **Notas:**
@@ -235,11 +235,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
         participant CloseEventUC as CloseEventUseCase
@@ -253,11 +253,11 @@ sequenceDiagram
     EventController->>CloseEventUC: execute(eventId)
     CloseEventUC->>Postgres: BEGIN TX
     CloseEventUC->>Postgres: UPDATE event SET estado=CONCLUIDO, closedAt=now()
-    CloseEventUC->>Postgres: INSERT outbox_event (type=events.closed, payload={event…
+    CloseEventUC->>Postgres: INSERT outbox_event (type=events.closed, payload={eventId})
     CloseEventUC->>Postgres: COMMIT
     CloseEventUC-->>EventController: EventDto (CONCLUIDO)
     EventController-->>WebApp: 200 {estado: CONCLUIDO, _links: []}
-    WebApp-->>Professor: DS/AlertBanner success "Evento encerrado. Certificados …
+    WebApp-->>Professor: DS/AlertBanner success "Evento encerrado. Certificados sendo gerados."
 ```
 
 **Notas:**
@@ -278,11 +278,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant EventController
     end

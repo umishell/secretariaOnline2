@@ -62,12 +62,12 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Acessa /admin/usuarios
-    WebApp->>IAMController: GET /admin/usuarios?q=&page=0&size=20 (Bearer, user.man…
+    WebApp->>IAMController: GET /admin/usuarios?q=&page=0&size=20 (Bearer, user.manage_all ✓)
     IAMController->>ListUsersUC: execute(UserQuery, Pageable)
     ListUsersUC->>Postgres: SELECT usuario BY filtros LIMIT 20 OFFSET 0
     Postgres-->>ListUsersUC: Page<UsuarioEntity>
     ListUsersUC-->>IAMController: Page<UsuarioDto> + _links por item
-    IAMController-->>WebApp: 200 Page<UsuarioDto> (_links: edit, deactivate?, reset-…
+    IAMController-->>WebApp: 200 Page<UsuarioDto> (_links: edit, deactivate?, reset-password)
     WebApp-->>Admin: DataTable com badges Tipo/Situação + ações _links
 ```
 
@@ -139,7 +139,7 @@ sequenceDiagram
     participant Postgres
 
     Admin->>WebApp: Clica "Desativar" + confirma dialog destrutivo
-    WebApp->>IAMController: PATCH /admin/usuarios/:id (Bearer, user.manage_all ✓) {…
+    WebApp->>IAMController: PATCH /admin/usuarios/:id (Bearer, user.manage_all ✓) {status: INATIVO}
     IAMController->>DeactivateUserUC: execute(userId, operadorId)
     DeactivateUserUC->>Postgres: BEGIN TX
     DeactivateUserUC->>Postgres: UPDATE usuario SET status=INATIVO
@@ -176,14 +176,14 @@ sequenceDiagram
     participant ResetPasswordUC as ResetPasswordAdminUseCase
     participant Postgres
 
-    Admin->>WebApp: Clica "Reset senha" → modal sem campo senha → "Confirma…
-    WebApp->>IAMController: POST /users/:id/password-reset (Bearer, user.reset_pass…
+    Admin->>WebApp: Clica "Reset senha" → modal sem campo senha → "Confirmar"
+    WebApp->>IAMController: POST /users/:id/password-reset (Bearer, user.reset_password ✓)
     IAMController->>ResetPasswordUC: execute(targetUserId, operadorId)
     ResetPasswordUC->>ResetPasswordUC: gerar JWT 1-uso (JTI único, exp=24h, aud=password-reset)
     ResetPasswordUC->>Postgres: BEGIN TX
     ResetPasswordUC->>Postgres: INSERT password_reset_token {jti, exp, used=false}
     ResetPasswordUC->>Postgres: INSERT outbox_event(type='iam.password_reset_requested')
-    ResetPasswordUC->>Postgres: INSERT audit_log {acao='RESET_PASSWORD', operadorId, ta…
+    ResetPasswordUC->>Postgres: INSERT audit_log {acao='RESET_PASSWORD', operadorId, targetUserId}
     ResetPasswordUC->>Postgres: COMMIT
     ResetPasswordUC-->>IAMController: {email, linkSent: true}
     IAMController-->>WebApp: 200 {email}

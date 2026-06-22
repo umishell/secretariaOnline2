@@ -1,0 +1,93 @@
+// ============================================================
+// M1 — IAM + Sessão (7 tabelas)
+// Fonte: §5.3 analise_arquitetural + MVP v1 §5.1
+//        + Etapa 0 §4.3 (colunas F0) + §7 + §8
+// Decisões aplicadas: I5 (refresh_token), I6 (jti_blacklist)
+// ============================================================
+
+Project so2_iam {
+  database_type: 'PostgreSQL'
+  Note: 'SecretariaOnline2 — módulo IAM + Sessão'
+}
+
+Table usuario {
+  id                  uuid        [pk, not null, note: 'UUIDv7']
+  nome                varchar(200) [not null]
+  cpf                 varchar(11)  [unique]
+  email               citext       [unique, not null]
+  email_ufpr          citext       [unique]
+  grr                 varchar(20)  [unique]
+  senha_hash          varchar(200) [not null, note: 'Argon2id']
+  senha_alterada      boolean      [not null, default: false]
+  telefone            varchar(30)
+  id_curso            uuid         [ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  metadata            jsonb        [not null, default: `'{}'`, note: 'diploma, social, aceite_lgpd_em etc.']
+  password_history    jsonb        [not null, default: `'[]'`, note: 'últimos 3 hashes — Etapa0 §4.3']
+  falhas_consecutivas integer      [not null, default: 0, note: 'bloqueio após 10 falhas — F0.1-e']
+  bloqueado_ate       timestamptz  [note: 'NULL = não bloqueado; desbloqueio automático — F0.1-e']
+  ativo               boolean      [not null, default: true]
+  created_at          timestamptz  [not null, default: `now()`]
+  updated_at          timestamptz  [not null, default: `now()`]
+  deleted_at          timestamptz  [note: 'soft delete']
+}
+
+Table role {
+  id          uuid         [pk, not null]
+  code        varchar(50)  [unique, not null, note: 'ALUNO, PROFESSOR, SECRETARIO, COORDENADOR, ADMIN']
+  description varchar(200) [not null]
+}
+
+Table authority {
+  id          uuid         [pk, not null]
+  code        varchar(100) [unique, not null, note: 'request.deliberate, event.manage etc.']
+  description varchar(200) [not null]
+}
+
+Table role_authority {
+  id_role      uuid [not null, ref: > role.id]
+  id_authority uuid [not null, ref: > authority.id]
+
+  Indexes {
+    (id_role, id_authority) [pk]
+  }
+}
+
+Table usuario_role {
+  id_usuario uuid [not null, ref: > usuario.id]
+  id_role    uuid [not null, ref: > role.id]
+  escopo     jsonb [not null, default: `'{}'`, note: 'ex: {"idCurso": "uuid"} — restrição de contexto']
+
+  Indexes {
+    (id_usuario, id_role) [pk]
+  }
+}
+
+// Decisão I5 — incluir refresh_token (ausente em jpaInterfaces, presente em MVP v1 §5.1)
+// Composição estrita: ON DELETE CASCADE (diagrama classes IAM)
+Table refresh_token {
+  id          uuid         [pk, not null]
+  id_usuario  uuid         [not null, ref: > usuario.id, note: 'CASCADE — token órfão impossível']
+  token_hash  varchar(200) [not null, note: 'hash do token opaco; token em si nunca persiste']
+  expira_em   timestamptz  [not null]
+  usado_em    timestamptz  [note: 'preenchido na rotação — indica que novo token foi emitido']
+  revogado_em timestamptz  [note: 'preenchido na revogação em massa (reuse detection — F0.1-f)']
+  ip          inet         [note: 'IP de origem da sessão (P1)']
+  user_agent  text         [note: 'device info da sessão (P1)']
+  created_at  timestamptz  [not null, default: `now()`]
+}
+
+// Decisão I6 — jti_blacklist em vez de password_reset_token
+// PK natural (jti = UUID do JWT); sem FK — blacklist é consultada por JTI direto
+Table jti_blacklist {
+  jti        uuid        [pk, not null, note: 'PK natural = claim jti do JWT de uso único']
+  expira_em  timestamptz [not null, note: 'TTL do token original; permite limpeza periódica']
+  created_at timestamptz [not null, default: `now()`]
+}
+
+// ============================================================
+// FKs cross-módulo originadas neste módulo M1
+// ============================================================
+// usuario.id_curso  →  curso.id  (M2 Acadêmico)
+//   — criada em M2 (curso existirá antes de usuario na ordem Flyway)
+//   — no merge: Ref: usuario.id_curso > curso.id
+// ============================================================

@@ -64,7 +64,7 @@ sequenceDiagram
     Usuário->>WebApp: navega para /suporte (Bearer; JwtFilter ✓)
     WebApp->>SupportController: GET /support/faq?perfil=ALUNO (Bearer)
     SupportController->>SupportUseCase: getFaq(perfil=ALUNO)
-    SupportUseCase->>Postgres: SELECT faq_items WHERE ativa=true ORDER BY perfil_ordem…
+    SupportUseCase->>Postgres: SELECT faq_items WHERE ativa=true ORDER BY perfil_ordem ASC
     Postgres-->>SupportUseCase: [FaqItemDto] (ordenado por relevância de perfil)
     SupportUseCase-->>SupportController: List FaqItemDto
     SupportController-->>WebApp: 200 [{id, pergunta, resposta}]
@@ -100,7 +100,7 @@ sequenceDiagram
     WebApp->>SupportController: POST /support/tickets (Bearer, {assunto, mensagem})
     SupportController->>CreateTicketUseCase: createTicket(userId, assunto, mensagem)
     CreateTicketUseCase->>Postgres: BEGIN TX
-    CreateTicketUseCase->>Postgres: INSERT request (type=SUPORTE_TECNICO, estado=ABERTA, st…
+    CreateTicketUseCase->>Postgres: INSERT request (type=SUPORTE_TECNICO, estado=ABERTA, student_id, dados)
     CreateTicketUseCase->>Postgres: INSERT outbox_event (support.ticket_created)
     CreateTicketUseCase->>Postgres: COMMIT → gera numero=SUP-2025-042
     Postgres-->>CreateTicketUseCase: {id, numero: "SUP-2025-042"}

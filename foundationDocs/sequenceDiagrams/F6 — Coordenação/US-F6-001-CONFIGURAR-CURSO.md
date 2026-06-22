@@ -65,7 +65,7 @@ sequenceDiagram
     WebApp->>CourseController: GET /courses/tads/config (Bearer, course.config ✓)
     CourseController->>GetCourseConfigUC: loadConfig(courseId="tads", userId)
     GetCourseConfigUC->>Postgres: SELECT * FROM course_config WHERE course_id='tads'
-    Postgres-->>GetCourseConfigUC: horasFormativas=120, calendario=15_SEMANAS, bancaMembro…
+    Postgres-->>GetCourseConfigUC: horasFormativasMinimas=120, calendario=15_SEMANAS, bancaMembrosExternos=2, bancaModalidade=HÍBRIDO
     GetCourseConfigUC-->>CourseController: CourseConfigDto
     CourseController-->>WebApp: 200 {…}
     WebApp-->>Coordenador: form populado; botão Salvar desabilitado (dirty=false)
@@ -99,17 +99,17 @@ sequenceDiagram
 
     Coordenador->>WebApp: altera horasFormativasMinimas 120→150 (dirty=true)
     Coordenador->>WebApp: clica "Salvar"
-    WebApp->>CourseController: PATCH /courses/tads/config {horasFormativasMinimas: 150…
+    WebApp->>CourseController: PATCH /courses/tads/config {horasFormativasMinimas: 150}
     CourseController->>UpdateCourseConfigUC: updateConfig(courseId, patch, userId)
-    UpdateCourseConfigUC->>Postgres: BEGIN; SELECT course_config WHERE course_id='tads' FOR …
+    UpdateCourseConfigUC->>Postgres: BEGIN; SELECT course_config WHERE course_id='tads' FOR UPDATE
     Postgres-->>UpdateCourseConfigUC: config atual {horasFormativasMinimas: 120, ...}
     UpdateCourseConfigUC->>Postgres: UPDATE course_config SET horasFormativasMinimas=150
-    UpdateCourseConfigUC->>Postgres: INSERT audit_log {campo: horasFormativasMinimas, de: 12…
+    UpdateCourseConfigUC->>Postgres: INSERT audit_log {campo: horasFormativasMinimas, de: 120, para: 150}
     UpdateCourseConfigUC->>Postgres: COMMIT
     Postgres-->>UpdateCourseConfigUC: ok
     UpdateCourseConfigUC-->>CourseController: CourseConfigDto (config atualizada completa)
     CourseController-->>WebApp: 200 {horasFormativasMinimas: 150, ..., _links: {update}}
-    WebApp-->>Coordenador: toast "Configuração salva"; dirty=false; Salvar desabil…
+    WebApp-->>Coordenador: toast "Configuração salva"; dirty=false; Salvar desabilitado
 ```
 
 **Notas:**

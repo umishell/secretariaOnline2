@@ -56,11 +56,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as ForgotPasswordUseCase
         participant DB as Postgres
@@ -71,9 +71,9 @@ sequenceDiagram
     AC->>UC: execute(ForgotPasswordCommand)
     UC->>DB: SELECT usuario BY email (normalizado)
     DB-->>UC: UsuarioEntity (ativo)
-    UC->>UC: gera JWT 1-uso (JTI UUIDv7, audience=password-reset, ex…
+    UC->>UC: gera JWT 1-uso (JTI UUIDv7, audience=password-reset, exp=24h, sub=userId)
     UC->>DB: BEGIN TX
-    UC->>DB: INSERT outbox_event (iam.password_reset_requested, payl…
+    UC->>DB: INSERT outbox_event (iam.password_reset_requested, payload resetUrl)
     UC->>DB: INSERT audit_log (iam.password_reset_requested, email, IP)
     UC->>DB: COMMIT TX
     UC-->>AC: void (202 sem corpo diferenciado)
@@ -100,11 +100,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant AC as AuthController
         participant UC as ForgotPasswordUseCase
         participant DB as Postgres
@@ -139,11 +139,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Usuario
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant RL as RateLimitFilter
         participant AC as AuthController
     end

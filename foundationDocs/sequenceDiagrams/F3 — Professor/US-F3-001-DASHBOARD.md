@@ -56,11 +56,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant Redis
@@ -74,7 +74,7 @@ sequenceDiagram
     JwtFilter->>DashboardBFF: repassa (professorId, authorities[])
     DashboardBFF->>Redis: GET dashboard:{professorId}
     Redis-->>DashboardBFF: MISS
-    DashboardBFF->>Postgres: SELECT kpis, filaSolicitacoes (canDeliberate=true), meu…
+    DashboardBFF->>Postgres: SELECT kpis, filaSolicitacoes (canDeliberate=true), meusEventos
     DashboardBFF->>Postgres: SELECT formativasCaaf IF formative.review in authorities
     Postgres-->>DashboardBFF: dados agregados (formativasCaaf=null se sem capability)
     DashboardBFF->>Redis: SET dashboard:{professorId} TTL=30s
@@ -103,11 +103,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Professor
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant DashboardBFF
         participant SolicitacoesQuery
@@ -123,8 +123,8 @@ sequenceDiagram
     SolicitacoesQuery-->>DashboardBFF: timeout / erro interno
     EventosQuery-->>DashboardBFF: dados OK
     DashboardBFF-->>WebApp: 200 {kpis, filaSolicitacoes: null, meusEventos, _links}
-    WebApp->>WebApp: useActions(_links) + marca bloco solicitacoes como degr…
-    WebApp-->>Professor: dashboard parcial + DS/AlertBanner warning em "Fila de …
+    WebApp->>WebApp: useActions(_links) + marca bloco solicitacoes como degradado
+    WebApp-->>Professor: dashboard parcial + DS/AlertBanner warning em "Fila de solicitações"
 ```
 
 **Notas:**

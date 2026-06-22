@@ -1,0 +1,437 @@
+// =============================================================================
+// FIGURA 3 — Modelo lógico do banco de dados transacional — SecretariaOnline2
+// FONTE: Os autores (2026).
+// Gerado: Etapa 3 — merge de foundationDocs/DB/_parcial/*.dbml
+// Tabelas: 31 (29 domínio + refresh_token + jti_blacklist)
+// Módulos: M1 IAM · M2 Acadêmico · M3 Solicitações · M4 Formativas · M5 Estágio
+//          M6 TCC · M7 Comunicação/Outbox · M8 Presença v4.1 · M9 Certificado/Auditoria
+// Renderizar: https://dbdiagram.io
+// =============================================================================
+
+Project secretariaonline2 {
+  database_type: 'PostgreSQL'
+  Note: 'SecretariaOnline2 — modelo lógico completo (TCC)'
+}
+
+// =============================================================================
+// M1 — IAM + Sessão (7 tabelas)
+// Fonte: _parcial/iam.dbml · decisões I5, I6
+// =============================================================================
+
+Table usuario {
+  id                  uuid        [pk, not null, note: 'UUIDv7']
+  nome                varchar(200) [not null]
+  cpf                 varchar(11)  [unique]
+  email               citext       [unique, not null]
+  email_ufpr          citext       [unique]
+  grr                 varchar(20)  [unique]
+  senha_hash          varchar(200) [not null, note: 'Argon2id']
+  senha_alterada      boolean      [not null, default: false]
+  telefone            varchar(30)
+  id_curso            uuid         [ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  metadata            jsonb        [not null, default: `'{}'`, note: 'diploma, social, aceite_lgpd_em etc.']
+  password_history    jsonb        [not null, default: `'[]'`, note: 'últimos 3 hashes — Etapa0 §4.3']
+  falhas_consecutivas integer      [not null, default: 0, note: 'bloqueio após 10 falhas — F0.1-e']
+  bloqueado_ate       timestamptz  [note: 'NULL = não bloqueado; desbloqueio automático — F0.1-e']
+  ativo               boolean      [not null, default: true]
+  created_at          timestamptz  [not null, default: `now()`]
+  updated_at          timestamptz  [not null, default: `now()`]
+  deleted_at          timestamptz  [note: 'soft delete']
+}
+
+Table role {
+  id          uuid         [pk, not null]
+  code        varchar(50)  [unique, not null, note: 'ALUNO, PROFESSOR, SECRETARIO, COORDENADOR, ADMIN']
+  description varchar(200) [not null]
+}
+
+Table authority {
+  id          uuid         [pk, not null]
+  code        varchar(100) [unique, not null, note: 'request.deliberate, event.manage etc.']
+  description varchar(200) [not null]
+}
+
+Table role_authority {
+  id_role      uuid [not null, ref: > role.id]
+  id_authority uuid [not null, ref: > authority.id]
+
+  Indexes {
+    (id_role, id_authority) [pk]
+  }
+}
+
+Table usuario_role {
+  id_usuario uuid [not null, ref: > usuario.id]
+  id_role    uuid [not null, ref: > role.id]
+  escopo     jsonb [not null, default: `'{}'`, note: 'ex: {"idCurso": "uuid"} — restrição de contexto']
+
+  Indexes {
+    (id_usuario, id_role) [pk]
+  }
+}
+
+Table refresh_token {
+  id          uuid         [pk, not null]
+  id_usuario  uuid         [not null, ref: > usuario.id, note: 'CASCADE — token órfão impossível']
+  token_hash  varchar(200) [not null, note: 'hash do token opaco; token em si nunca persiste']
+  expira_em   timestamptz  [not null]
+  usado_em    timestamptz  [note: 'preenchido na rotação — indica que novo token foi emitido']
+  revogado_em timestamptz  [note: 'preenchido na revogação em massa (reuse detection — F0.1-f)']
+  ip          inet         [note: 'IP de origem da sessão (P1)']
+  user_agent  text         [note: 'device info da sessão (P1)']
+  created_at  timestamptz  [not null, default: `now()`]
+}
+
+Table jti_blacklist {
+  jti        uuid        [pk, not null, note: 'PK natural = claim jti do JWT de uso único']
+  expira_em  timestamptz [not null, note: 'TTL do token original; permite limpeza periódica']
+  created_at timestamptz [not null, default: `now()`]
+}
+
+// =============================================================================
+// M2 — Acadêmico (4 tabelas)
+// Fonte: _parcial/academico.dbml · decisões I7, I8
+// =============================================================================
+
+Table curso {
+  id                   uuid         [pk, not null]
+  nome                 varchar(200) [not null]
+  sigla                varchar(20)  [unique, not null]
+  codigo_sie           varchar(20)
+  id_coordenador       uuid         [ref: > usuario.id, note: 'FK tardia — I7: adicionada via ALTER após usuario existir']
+  tipo_calendario      smallint     [not null, note: '15 ou 18 semanas por semestre']
+  horas_formativas_req integer      [not null, default: 0]
+  ativo                boolean      [not null, default: true]
+  created_at           timestamptz  [default: `now()`]
+}
+
+Table disciplina {
+  id            uuid        [pk, not null]
+  codigo        varchar(30) [not null]
+  nome          varchar(200) [not null]
+  id_curso      uuid        [not null, ref: > curso.id]
+  periodo       smallint    [note: 'período sugerido na grade (1..n)']
+  carga_horaria integer
+  ativa         boolean     [not null, default: true]
+
+  Indexes {
+    (id_curso, codigo) [unique, note: 'código único dentro do curso']
+  }
+}
+
+Table periodo_letivo {
+  id       uuid     [pk, not null]
+  ano      smallint [not null]
+  semestre smallint [not null, note: 'CHECK: 1 ou 2']
+  data_ini date     [not null]
+  data_fim date     [not null]
+
+  Indexes {
+    (ano, semestre) [unique]
+  }
+}
+
+Table calendario_academico {
+  id              uuid [pk, not null]
+  id_periodo      uuid [not null, ref: > periodo_letivo.id]
+  id_request_type uuid [not null, ref: > request_type.id, note: 'FK cross-módulo → M3 Solicitações']
+  dt_ini          date [not null]
+  dt_fim          date [not null, note: 'CHECK: dt_fim >= dt_ini']
+  observacao      text
+}
+
+// =============================================================================
+// M3 — Solicitações / Workflow Engine (5 tabelas)
+// Fonte: _parcial/solicitacoes.dbml · decisões I11, §0.3.1
+// =============================================================================
+
+Table request_type {
+  id           uuid        [pk, not null]
+  code         varchar(50) [unique, not null, note: 'ADIANTAMENTO_PERIODO, APROVEITAMENTO_DISCIPLINA... (19 tipos)']
+  descricao    varchar(200) [not null]
+  prazo_dias   integer     [not null, default: 15]
+  interna      boolean     [not null, default: false, note: 'true = uso interno secretaria']
+  form_schema  jsonb       [not null, note: 'JSON Schema Draft-07 — campos do formulário dinâmico']
+  workflow_json jsonb      [not null, note: 'state machine: { initial, states[], transitions[] }']
+  required_auth jsonb      [not null, default: `'[]'`, note: 'authorities[] que podem deliberar']
+  ativo        boolean     [not null, default: true]
+}
+
+Table request {
+  id              uuid        [pk, not null]
+  numero_anual    integer     [not null, note: 'sequência reiniciada por ano']
+  ano             smallint    [not null]
+  id_solicitante  uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_request_type uuid        [not null, ref: > request_type.id]
+  id_curso        uuid        [not null, ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  estado          varchar(50) [not null, note: 'controlado pelo WorkflowEngine: RASCUNHO, ABERTA, EM_TRIAGEM, EM_DELIBERACAO, EM_AJUSTE, DEFERIDA, INDEFERIDA, EM_REVISAO, ARQUIVADA']
+  dados           jsonb       [not null, default: `'{}'`, note: 'payload do form_schema preenchido pelo solicitante']
+  created_at      timestamptz [not null, default: `now()`]
+  updated_at      timestamptz [not null, default: `now()`]
+  concluded_at    timestamptz [note: 'preenchido quando estado terminal (DEFERIDA, INDEFERIDA, ARQUIVADA)']
+  prazo_em        timestamptz [not null, note: 'created_at + prazo_dias do request_type']
+
+  Indexes {
+    (ano, numero_anual) [unique, note: 'protocolo único por ano']
+  }
+}
+
+Table request_event {
+  id              uuid        [pk, not null]
+  id_request      uuid        [not null, ref: > request.id, note: 'CASCADE — evento órfão impossível']
+  id_ator         uuid        [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; nullable = sistema']
+  tipo            varchar(50) [not null, note: 'OPENED, ASSIGNED, FORWARDED, DEFERRED, DENIED, REQUEST_ADJUSTMENT, RESUBMIT, REQUEST_REVIEW, ARCHIVED']
+  estado_anterior varchar(50) [note: 'null no primeiro evento (OPENED)']
+  estado_novo     varchar(50) [note: 'estado após a transição']
+  parecer         text        [note: 'justificativa do deliberador']
+  metadata        jsonb       [not null, default: `'{}'`, note: 'dados extras da transição (ex: notifyTemplate usado)']
+  at              timestamptz [not null, default: `now()`]
+}
+
+Table request_line_item {
+  id            uuid        [pk, not null]
+  id_request    uuid        [not null, ref: > request.id, note: 'CASCADE']
+  id_disciplina uuid        [ref: > disciplina.id, note: 'FK cross-módulo → M2 Acadêmico; nullable']
+  operacao      varchar(20) [note: 'INCLUSAO | EXCLUSAO | APROVEITAMENTO']
+  turma         varchar(10)
+  estado        varchar(30) [not null, default: 'PENDENTE']
+  parecer       text
+  metadata      jsonb       [not null, default: `'{}'`]
+}
+
+Table request_attachment {
+  id            uuid         [pk, not null]
+  id_request    uuid         [not null, ref: > request.id, note: 'CASCADE']
+  categoria     varchar(50)  [not null, note: 'EMENTA, HISTORICO, CONTRATO, ATESTADO_MEDICO...']
+  nome_original varchar(255) [not null]
+  storage_key   varchar(500) [not null, note: 'chave no MinIO/S3']
+  mime_type     varchar(100) [not null]
+  tamanho_bytes bigint       [not null]
+  sha256        char(64)     [not null, note: 'integridade — calculado no cliente antes do upload']
+  uploaded_by   uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  status        varchar(20)  [not null, default: 'CONFIRMED', note: 'PENDING (URL gerada) | CONFIRMED (upload concluído) — I11-a']
+  uploaded_at   timestamptz  [not null, default: `now()`]
+}
+
+// =============================================================================
+// M4 — Formativas (2 tabelas)
+// Fonte: _parcial/formativas.dbml
+// =============================================================================
+
+Table formative_activity {
+  id                uuid         [pk, not null]
+  id_curso          uuid         [not null, ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  descricao         varchar(300) [not null]
+  qtd_horas_max     integer      [not null, note: 'teto de horas aceitas para esta categoria']
+  doc_comprobatorio varchar(300) [note: 'descrição do comprovante exigido']
+  ativa             boolean      [not null, default: true]
+}
+
+Table formative_entry {
+  id               uuid        [pk, not null]
+  id_aluno         uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_activity      uuid        [not null, ref: > formative_activity.id]
+  horas_declaradas integer     [not null]
+  horas_validadas  integer     [note: 'preenchido após revisão; null = ainda não revisado']
+  estado           varchar(30) [not null, default: 'SUBMETIDA', note: 'SUBMETIDA, EM_REVISAO, APROVADA, REJEITADA']
+  parecer          text
+  id_storage_key   uuid        [note: 'UUID do comprovante no object storage (MinIO/S3)']
+  created_at       timestamptz [default: `now()`]
+  reviewed_at      timestamptz
+  reviewed_by      uuid        [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; professor/CAAF']
+}
+
+// =============================================================================
+// M5 — Estágio (2 tabelas)
+// Fonte: _parcial/estagio.dbml
+// =============================================================================
+
+Table internship {
+  id                uuid         [pk, not null]
+  id_aluno          uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_orientador     uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_coe            uuid         [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; membro COE responsável; nullable']
+  empresa_nome      varchar(200) [not null]
+  supervisor_nome   varchar(200)
+  supervisor_email  citext
+  supervisor_tel    varchar(30)
+  data_ini          date         [not null]
+  data_fim_prevista date
+  data_fim          date
+  ch_semanal        integer      [note: 'carga horária semanal acordada']
+  valor_bolsa_cents integer      [note: 'em centavos para evitar float; null = sem bolsa']
+  obrigatorio       boolean      [not null, note: 'true = estágio obrigatório do currículo']
+  num_contrato      varchar(50)
+  num_processo_sei  varchar(50)  [note: 'número SEI da UFPR para estágio obrigatório']
+  estado            varchar(30)  [not null, note: 'EM_ANDAMENTO, CONCLUIDO, CANCELADO, SUSPENSO']
+  created_at        timestamptz  [default: `now()`]
+}
+
+Table internship_document {
+  id            uuid        [pk, not null]
+  id_internship uuid        [not null, ref: > internship.id, note: 'CASCADE']
+  categoria     varchar(50) [not null, note: 'CONTRATO, TERMO_ADITIVO, RELATORIO_PARCIAL, RELATORIO_FINAL']
+  storage_key   varchar(500) [not null]
+  sha256        char(64)    [not null]
+  emitido_em    date
+}
+
+// =============================================================================
+// M6 — TCC (3 tabelas)
+// Fonte: _parcial/tcc.dbml
+// =============================================================================
+
+Table tcc {
+  id          uuid         [pk, not null]
+  id_curso    uuid         [not null, ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico']
+  tema        varchar(300) [not null]
+  data_defesa timestamptz  [note: 'null = ainda não agendado']
+  id_sala     uuid         [note: 'reserva de sala — referência futura; sem FK física neste módulo']
+  link_artigo varchar(500)
+  storage_key varchar(500) [note: 'PDF final do TCC no object storage']
+  estado      varchar(30)  [not null, note: 'EM_ANDAMENTO, ENTREGUE, APROVADO, REPROVADO']
+}
+
+Table tcc_member {
+  id_tcc   uuid [not null, ref: > tcc.id, note: 'CASCADE']
+  id_aluno uuid [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+
+  Indexes {
+    (id_tcc, id_aluno) [pk]
+  }
+}
+
+Table tcc_examiner {
+  id_tcc       uuid    [not null, ref: > tcc.id, note: 'CASCADE']
+  id_professor uuid    [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  orientador   boolean [not null, note: 'true = orientador principal; false = membro da banca']
+
+  Indexes {
+    (id_tcc, id_professor) [pk]
+  }
+}
+
+// =============================================================================
+// M7 — Comunicação + Outbox (4 tabelas)
+// Fonte: _parcial/comunicacao.dbml · decisão I9
+// =============================================================================
+
+Table communication {
+  id           uuid         [pk, not null]
+  tipo         varchar(30)  [not null, note: 'NOTICIA, AVISO, COMUNICADO_PROF, OPORTUNIDADE']
+  prioridade   smallint     [not null, note: '1=baixa, 2=media, 3=alta, 4=critica']
+  titulo       varchar(200) [not null]
+  corpo_md     text         [not null, note: 'Markdown — renderizado no hub e no email']
+  id_curso_alvo uuid        [ref: > curso.id, note: 'FK cross-módulo → M2; null = todos os cursos']
+  audiencia    jsonb        [not null, default: `'{}'`, note: 'filtros de público: roles[], cursos[], etc.']
+  publicado_em timestamptz  [not null, default: `now()`]
+  expira_em    timestamptz
+  id_autor     uuid         [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+}
+
+Table communication_delivery {
+  id              uuid        [pk, not null]
+  id_comm         uuid        [not null, ref: > communication.id, note: 'CASCADE']
+  id_destinatario uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  canal           varchar(20) [not null, note: 'PUSH | EMAIL | INAPP']
+  estado          varchar(20) [not null, note: 'PENDENTE | ENVIADO | FALHOU | LIDO']
+  tentativas      smallint    [not null, default: 0]
+  last_error      text
+  sent_at         timestamptz
+  read_at         timestamptz
+}
+
+Table notification_preference {
+  id_usuario uuid  [pk, not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; CASCADE']
+  email_on   jsonb [not null, default: `'{"critical":true,"high":true}'`]
+  push_on    jsonb [not null, default: `'{"critical":true,"high":true,"medium":true}'`]
+  dnd_from   time  [note: 'início do período Não Perturbe']
+  dnd_to     time  [note: 'fim do período Não Perturbe']
+}
+
+Table outbox_event {
+  id              uuid         [pk, not null]
+  aggregate_type  varchar(50)  [not null, note: 'ex: solicitacoes, iam, presenca']
+  aggregate_id    uuid         [not null, note: 'referência polimórfica — sem FK física']
+  event_type      varchar(100) [not null, note: 'ex: iam.password_reset_requested, solicitacoes.deliberated']
+  payload         jsonb        [not null, note: 'dados para o dispatcher (destinatário, template, vars)']
+  status          varchar(20)  [not null, default: 'PENDING', note: 'PENDING | SENT | FAILED | DEAD']
+  tentativas      smallint     [not null, default: 0]
+  next_attempt_at timestamptz  [not null, default: `now()`]
+  created_at      timestamptz  [not null, default: `now()`]
+  processed_at    timestamptz
+}
+
+// =============================================================================
+// M8 — Presença v4.1 (2 tabelas)
+// Fonte: _parcial/presenca.dbml · decisões I1, I4, I10
+// =============================================================================
+
+Table event_attendance {
+  id                 uuid          [pk, not null]
+  titulo             varchar(200)  [not null]
+  id_curso           uuid          [ref: > curso.id, note: 'FK cross-módulo → M2 Acadêmico; null = multi-curso']
+  organizador        uuid          [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; event.manage']
+  ini_em             timestamptz   [not null, note: 'scheduledStart — agenda do evento']
+  fim_em             timestamptz   [not null, note: 'scheduledEnd — agenda do evento']
+  ch_creditadas      numeric(5,2)  [not null, note: 'horas formativas creditadas na conclusão']
+  attendance_mode    varchar(30)   [not null, note: 'QR_SINGLE | QR_DUAL | SECRET_SINGLE | SECRET_DUAL']
+  validation_windows jsonb         [note: 'decisão I4.2: JSONB canônico — não normalizado em tabela filha']
+  estado             varchar(30)   [not null, default: 'AGENDADO', note: 'AGENDADO | EM_ANDAMENTO | CONCLUIDO']
+  pin_entrada_hash   varchar(128)  [note: 'hash do PIN de entrada (modos SECRET_*)']
+  pin_saida_hash     varchar(128)  [note: 'hash do PIN de saída (modos SECRET_DUAL)']
+  janela_entrada_ini timestamptz   [note: 'abertura efetiva da janela de entrada']
+  janela_entrada_fim timestamptz
+  janela_saida_ini   timestamptz   [note: 'modos DUAL']
+  janela_saida_fim   timestamptz
+}
+
+Table attendance_session {
+  id          uuid        [pk, not null]
+  id_evento   uuid        [not null, ref: > event_attendance.id, note: 'CASCADE']
+  id_aluno    uuid        [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  device_uuid uuid        [not null, note: 'binding por dispositivo — UNIQUE com id_evento']
+  entrada_em  timestamptz [note: 'timestamp da confirmação de entrada']
+  saida_em    timestamptz [note: 'timestamp da confirmação de saída (modos DUAL)']
+  estado      varchar(40) [not null, note: 'AGUARDANDO_ENTRADA | ENTRADA_OK | DESCLASSIFICADO_FASE1 | AGUARDANDO_SAIDA | PRESENCA_COMPLETA_EFETIVADA']
+  created_at  timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (id_evento, id_aluno)    [unique, note: 'um aluno, uma sessão por evento']
+    (id_evento, device_uuid) [unique, note: 'device binding — anti-compartilhamento']
+  }
+}
+
+// =============================================================================
+// M9 — Certificado + Auditoria (2 tabelas)
+// Fonte: _parcial/certificado_auditoria.dbml
+// =============================================================================
+
+Table certificate {
+  id              uuid          [pk, not null]
+  id_beneficiario uuid          [not null, ref: > usuario.id, note: 'FK cross-módulo → M1 IAM']
+  id_evento       uuid          [ref: > event_attendance.id, note: 'FK cross-módulo → M8 Presença; null se origem formativa']
+  id_formativa    uuid          [ref: > formative_entry.id, note: 'FK cross-módulo → M4 Formativas; null se origem evento']
+  titulo          varchar(200)  [not null]
+  ch_horas        numeric(5,2)  [not null]
+  emitido_em      timestamptz   [not null, default: `now()`]
+  emitente_nome   varchar(200)  [not null, note: 'nome da instituição/órgão emissor']
+  hash_sha256     char(64)      [unique, not null, note: 'SHA-256 do PDF canônico — verificação pública']
+  signature_alg   varchar(30)   [not null, note: 'ED25519 | SHA256_RSA_PSS | ICP']
+  signature_b64   text          [not null, note: 'assinatura ED25519 em Base64']
+  verifier_url    varchar(300)  [not null, note: '/publico/verificar-certificado/:hash']
+  storage_key     varchar(500)  [not null, note: 'PDF no object storage (MinIO/S3)']
+}
+
+Table audit_log {
+  id         uuid        [pk, not null]
+  at         timestamptz [not null, default: `now()`]
+  id_ator    uuid        [ref: > usuario.id, note: 'FK cross-módulo → M1 IAM; nullable']
+  acao       varchar(100) [not null, note: 'ex: iam.login_success, solicitacoes.deliberated, presenca.session_created']
+  alvo_tipo  varchar(50)  [not null, note: 'ex: usuario, request, event_attendance']
+  alvo_id    uuid         [note: 'UUID do recurso afetado; null para ações globais']
+  ip         inet
+  user_agent text
+  payload    jsonb        [note: 'contexto da ação (sem dados sensíveis); delta via request_event']
+  resultado  varchar(20)  [not null, note: 'OK | DENIED | ERROR']
+}

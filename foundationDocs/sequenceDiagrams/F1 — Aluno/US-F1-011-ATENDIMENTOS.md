@@ -45,24 +45,24 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ServiceRecordController
         participant Postgres
     end
 
-    Aluno->>WebApp: acessa /meus-atendimentos (filtro opcional: "Pendente c…
+    Aluno->>WebApp: acessa /meus-atendimentos (filtro opcional: "Pendente ciência")
     WebApp->>JwtFilter: GET /service-records?aluno=me&status=:s (Bearer)
     JwtFilter->>JwtFilter: valida JWT + service_record.view_own ✓
     JwtFilter->>ServiceRecordController: repassa (alunoId, status?)
-    ServiceRecordController->>Postgres: SELECT service_record WHERE aluno_id=:alunoId AND (:s I…
-    Postgres-->>ServiceRecordController: [{id, data, assunto, status, _links.acknowledge? (se PE…
+    ServiceRecordController->>Postgres: SELECT service_record WHERE aluno_id=:alunoId AND (:s IS NULL OR status=:status)
+    Postgres-->>ServiceRecordController: [{id, data, assunto, status, _links.acknowledge? (se PENDENTE_CIENCIA)}]
     ServiceRecordController-->>WebApp: 200 {serviceRecords: [...]}
-    WebApp-->>Aluno: tabela (Data, Assunto, Status DS/Badge, Ação) — botão "…
+    WebApp-->>Aluno: tabela (Data, Assunto, Status DS/Badge, Ação) — botão "Estou ciente" via useActions se _links.acknowledge)
 ```
 
 **Notas:**
@@ -84,23 +84,23 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Aluno
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ServiceRecordController
         participant AcknowledgeUseCase
         participant Postgres
     end
 
-    Aluno->>WebApp: clica "Estou ciente" (serviceRecordId via _links.acknow…
+    Aluno->>WebApp: clica "Estou ciente" (serviceRecordId via _links.acknowledge href)
     WebApp->>JwtFilter: POST /service-records/{id}/acknowledge (Bearer)
     JwtFilter->>JwtFilter: valida JWT + service_record.view_own ✓
     JwtFilter->>ServiceRecordController: repassa (alunoId, serviceRecordId, ip=X-Forwarded-For)
     ServiceRecordController->>AcknowledgeUseCase: execute(cmd)
-    AcknowledgeUseCase->>Postgres: BEGIN; UPDATE service_record SET status=CIENCIA_DADA, c…
+    AcknowledgeUseCase->>Postgres: BEGIN; UPDATE service_record SET status=CIENCIA_DADA, ciencia_em=now(), ciencia_ip=:ip) + INSERT audit_log + COMMIT
     ServiceRecordController-->>WebApp: 200 OK {id, status: CIENCIA_DADA, ciencia_em, _links}
     WebApp-->>Aluno: badge "Ciente" (success) + botão "Estou ciente" desaparece
 ```

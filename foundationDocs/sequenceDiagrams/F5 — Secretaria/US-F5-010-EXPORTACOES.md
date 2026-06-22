@@ -57,11 +57,11 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ExportController
         participant CreateExportUC as CreateExportUseCase
@@ -73,11 +73,11 @@ sequenceDiagram
     JwtFilter->>JwtFilter: valida JWT + export.run ✓
     JwtFilter->>ExportController: repassa (kind, filtros, secretariaId)
     ExportController->>CreateExportUC: execute(kind, filtros, secretariaId)
-    CreateExportUC->>Postgres: INSERT export_job (PROCESSANDO, kind, filtros, secretar…
+    CreateExportUC->>Postgres: INSERT export_job (PROCESSANDO, kind, filtros, secretariaId)
     Postgres-->>CreateExportUC: jobId
     CreateExportUC-->>ExportController: {jobId, status: PROCESSANDO}
     ExportController-->>WebApp: 202 {jobId, status: PROCESSANDO}
-    WebApp-->>Secretaria: DS/Toast info "Exportação solicitada" + job PROCESSANDO…
+    WebApp-->>Secretaria: DS/Toast info "Exportação solicitada" + job PROCESSANDO no histórico
 ```
 
 **Notas:**
@@ -98,13 +98,13 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant ExportWorker
         participant Postgres
         participant MinIO
     end
 
-    ExportWorker->>Postgres: SELECT export_job WHERE status=PROCESSANDO (FOR UPDATE …
+    ExportWorker->>Postgres: SELECT export_job WHERE status=PROCESSANDO (FOR UPDATE SKIP LOCKED)
     Postgres-->>ExportWorker: ExportJobEntity (jobId, kind, filtros, secretariaId)
     ExportWorker->>Postgres: SELECT dados (kind=alunos, filtros aplicados)
     Postgres-->>ExportWorker: rowset (N registros)
@@ -112,8 +112,8 @@ sequenceDiagram
     ExportWorker->>MinIO: PUT exports/{jobId}/alunos_export.csv
     MinIO-->>ExportWorker: storageKey, ETag
     ExportWorker->>Postgres: BEGIN TX
-    ExportWorker->>Postgres: UPDATE export_job SET status=PRONTO, storageKey, expire…
-    ExportWorker->>Postgres: INSERT outbox_event (exports.ready, {jobId, secretariaI…
+    ExportWorker->>Postgres: UPDATE export_job SET status=PRONTO, storageKey, expiresAt=now()+7d
+    ExportWorker->>Postgres: INSERT outbox_event (exports.ready, {jobId, secretariaId})
     ExportWorker->>Postgres: COMMIT
 ```
 
@@ -136,11 +136,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ExportController
         participant Postgres
@@ -150,7 +150,7 @@ sequenceDiagram
     loop polling a cada 10s enquanto há jobs PROCESSANDO
         WebApp->>WebApp: monta contexto da tela
         WebApp->>ExportController: GET /exports?status=PROCESSANDO (Bearer, export.run ✓)
-        ExportController->>Postgres: SELECT export_jobs WHERE secretariaId=:id AND status=PR…
+        ExportController->>Postgres: SELECT export_jobs WHERE secretariaId=:id AND status=PROCESSANDO
         Postgres-->>ExportController: [{jobId, status: PRONTO, _links: [download]}]
         ExportController-->>WebApp: 200 {items: [{status: PRONTO, _links: [download]}]}
     end
@@ -185,18 +185,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant ExportScheduler
         participant Postgres
         participant MinIO
     end
 
-    ExportScheduler->>Postgres: SELECT export_jobs WHERE expiresAt < now() AND status=P…
+    ExportScheduler->>Postgres: SELECT export_jobs WHERE expiresAt < now() AND status=PRONTO
     Postgres-->>ExportScheduler: List<ExportJobEntity> (lote de jobs vencidos)
     ExportScheduler->>MinIO: DELETE exports/{jobId}.csv (por job vencido)
     MinIO-->>ExportScheduler: 204 No Content
     ExportScheduler->>Postgres: BEGIN TX
-    ExportScheduler->>Postgres: UPDATE export_job SET status=EXPIRADO, archivedAt=now()…
+    ExportScheduler->>Postgres: UPDATE export_job SET status=EXPIRADO, archivedAt=now()
     ExportScheduler->>Postgres: COMMIT
 ```
 
@@ -219,11 +219,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    box rgba(230,245,255,0.3) Client
+    box #e8f4fc Cliente
         participant Secretaria
         participant WebApp
     end
-    box rgba(255,245,230,0.3) Backend
+    box #fff8ee Servidor
         participant JwtFilter
         participant ExportController
     end
