@@ -31,8 +31,8 @@ Execute a [Etapa N] conforme @foundationDocs/prompts/PROMPT_gerar_requisitos_fun
 | 8 | ✅ | **Etapa 8** | RF F6 — Coordenação | 2 RFs | `por-fase/RF-F6-coordenacao.md` | 2026-06-23 |
 | 9 | ✅ | **Etapa 9** | RF F7 — Admin | 7 → 8 RFs | `por-fase/RF-F7-admin.md` | 2026-06-23 |
 | 10 | ✅ | **Etapa 10** | RF F8 — Cross-cutting | 2 RFs | `por-fase/RF-F8-cross-cutting.md` | 2026-06-23 |
-| 11 | ⬜ | **Etapa 11** | RF transversais (RF-TR-001 a 008) + revisão narrativa | — | `por-fase/RF-TR-transversais.md` | — |
-| 12 | ⬜ | **Etapa 12** | Revisão de cobertura: 51/51 HUs, métricas RNF, duplicatas, checklist qualidade §7 | — | Atualização `00-indice-requisitos.md` | — |
+| 11 | ✅ | **Etapa 11** | RF transversais (RF-TR-001 a 008) | 8 RFs | `por-fase/RF-TR-transversais.md` | 2026-06-23 |
+| 12 | ✅ | **Etapa 12** | Revisão de cobertura + RNF-SEC-04 | — | `00-indice-requisitos.md` | 2026-06-23 |
 
 ---
 
@@ -202,4 +202,4 @@ Execute a [Etapa N] conforme @foundationDocs/prompts/PROMPT_gerar_requisitos_fun
 
 ---
 
-*Última atualização: 2026-06-23 — Etapa 10 concluída*
+*Última atualização: 2026-06-23 — Campanha concluída (Etapas 0–12 ✅)*

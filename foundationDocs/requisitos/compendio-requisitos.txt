@@ -1,0 +1,385 @@
+REQUISITOS FUNCIONAIS
+SecretariaOnline2 — UFPR SEPT
+
+1 ACESSO PUBLICO E AUTENTICACAO
+
+RF-F0-001 – Autenticar usuário com identificador e senha
+    O sistema deve permitir que usuários cadastrados autentiquem-se informando identificador (e-mail institucional `@ufpr.br`, e-mail pessoal cadastrado ou GRR) e senha, recebendo tokens de acesso em caso de sucesso e sendo direcionados ao fluxo adequado conforme o estado da conta.
+
+RF-F0-002 – Solicitar link de recuperação de senha
+    O sistema deve permitir que um usuário que esqueceu sua senha informe seu e-mail e receba — quando o e-mail estiver cadastrado — um link de redefinição válido por 24 horas, sem revelar se o endereço existe na base de dados.
+
+RF-F0-003 – Redefinir senha via token de uso único
+    O sistema deve permitir que um usuário que acessou o link de recuperação de senha defina uma nova credencial que atenda aos requisitos de segurança, invalidando o token após o uso e encerrando todas as sessões anteriores.
+
+RF-F0-004 – Exibir informações de contato da secretaria
+    O sistema deve exibir uma página pública com endereço, telefones, e-mail institucional e horário de atendimento da secretaria, acessível sem autenticação.
+
+RF-F0-005 – Exibir página de erro amigável por código HTTP
+    O sistema deve apresentar telas de erro amigáveis e contextualizadas para os códigos HTTP 401, 403, 404 e 500, com mensagens em linguagem natural, ações de recuperação e ID de incidente quando aplicável, sem expor detalhes técnicos internos.
+
+RF-F0-006 – Verificar autenticidade de protocolo PDF
+    O sistema deve permitir que terceiros verifiquem publicamente a autenticidade de um protocolo de solicitação emitido pelo sistema, consultando metadados sanitizados e comparando localmente o hash SHA-256 de um PDF recebido, sem enviar o arquivo ao servidor.
+
+RF-F0-007 – Verificar autenticidade de certificado digital
+    O sistema deve permitir que terceiros verifiquem publicamente a autenticidade de certificados emitidos exclusivamente pelo sistema, validando hash SHA-256 e assinatura digital ED25519 com a chave pública publicada em JWKS, sem aceitar upload de certificados externos como documentos oficiais.
+
+2 PORTAL DO ALUNO
+
+RF-F1-001 – Visualizar dashboard unificado do aluno
+    O sistema deve apresentar ao aluno autenticado um painel unificado com KPIs, pendências de ação, últimas solicitações, próximos eventos, prazos e atalhos — agregados pelo BFF em uma única chamada, com renderização condicional orientada a HATEOAS.
+
+RF-F1-002 – Completar primeiro acesso (senha + LGPD)
+    O sistema deve obrigar o aluno com `senha_alterada = false` a definir senha pessoal forte e aceitar a política de privacidade (LGPD) antes de acessar qualquer outra funcionalidade.
+
+RF-F1-003-a – Editar dados pessoais do perfil
+    O sistema deve permitir que o aluno visualize e edite dados pessoais não acadêmicos (nome social, telefone, e-mail pessoal, foto), mantendo campos institucionais somente leitura.
+
+RF-F1-003-b – Trocar senha e gerenciar sessões ativas
+    O sistema deve permitir que o aluno troque sua senha (exigindo senha atual) e visualize/encerre sessões ativas em outros dispositivos.
+
+RF-F1-003-c – Configurar preferências de notificação
+    O sistema deve permitir que o aluno configure canais de notificação por prioridade, horário DND e modo digest.
+
+RF-F1-004 – Visualizar e gerenciar comunicações recebidas
+    O sistema deve exibir hub unificado de comunicações (institucional, turma, inbox de ações) com filtros, marcação de leitura e CTAs para itens que requerem ação.
+
+RF-F1-005-a – Listar solicitações acadêmicas próprias
+    O sistema deve permitir que o aluno liste suas solicitações acadêmicas com filtros, indicador de SLA e acesso à criação de nova solicitação quando autorizado.
+
+RF-F1-005-b – Abrir solicitação via wizard dinâmico
+    O sistema deve permitir que o aluno abra qualquer tipo de solicitação elegível através de wizard de 3 passos com formulário dinâmico (`form_schema`), anexos e confirmação — sem lógica duplicada por tipo.
+
+RF-F1-005-c – Acompanhar detalhe e timeline de solicitação
+    O sistema deve exibir detalhe completo da solicitação, timeline de eventos imutável e ações disponíveis exclusivamente via HATEOAS, incluindo edição em ajuste e geração de protocolo PDF.
+
+RF-F1-006 – Submeter e acompanhar atividades formativas
+    O sistema deve permitir que o aluno submeta comprovantes de atividades formativas, acompanhe parecer da CAAF e baixe certificados quando aprovado — incluindo confirmação simplificada para eventos com presença validada.
+
+RF-F1-007 – Acompanhar estágios e enviar documentos
+    O sistema deve permitir que o aluno visualize estágios registrados pela secretaria, envie documentos exigidos (TCE, relatórios) e acompanhe pareceres do orientador/COE.
+
+RF-F1-008 – Acompanhar TCC e enviar versão final
+    O sistema deve permitir que o aluno acompanhe o status do TCC, visualize banca e datas-chave, e faça upload da versão final quando autorizado.
+
+RF-F1-009 – Consultar eventos e confirmar presença
+    O sistema deve permitir que o aluno consulte eventos formativos elegíveis e confirme presença dentro das janelas configuradas, suportando modos SECRET/QR × SINGLE/DUAL conforme presença v4.1 — sem geofence, trust score ou aula regular.
+
+RF-F1-010 – Visualizar e baixar certificados emitidos
+    O sistema deve listar certificados emitidos automaticamente pelo sistema (nunca upload externo) e permitir download do PDF assinado com QR de verificação pública.
+
+RF-F1-011 – Consultar atendimentos e dar ciência
+    O sistema deve permitir que o aluno visualize atendimentos registrados pela secretaria e confirme ciência dos pendentes, com registro auditável.
+
+3 PORTAL DO EGRESSO
+
+RF-F2-001 – Visualizar dashboard read-only e reemitir documentos
+    O sistema deve oferecer ao egresso autenticado um painel estritamente read-only com histórico acadêmico resumido, diploma, certificados emitidos durante o curso e dados de colação, permitindo download do diploma e reemissão de certificados (regeneração do PDF original, sem nova chave de assinatura), com bloqueio de rotas exclusivas de aluno e redirecionamento pós-login adequado ao perfil EGRESSO.
+
+4 PORTAL DO PROFESSOR
+
+RF-F3-001 – Visualizar dashboard unificado do professor
+    O sistema deve apresentar ao professor autenticado um painel unificado com filas de trabalho (solicitações para deliberar, eventos do dia, formativas CAAF, estágios, TCCs), KPIs de SLA e atalhos — agregados pelo BFF em uma única chamada, com blocos e CTAs renderizados exclusivamente a partir de `_links` HATEOAS.
+
+RF-F3-002-a – Gerenciar eventos formativos (CRUD)
+    O sistema deve permitir que o professor com `event.manage` crie, edite, liste e exclua eventos formativos, configurando modo de presença (`attendanceMode`), janelas de validação, carga horária creditada e público-alvo, respeitando regras de imutabilidade por estado do evento.
+
+RF-F3-002-b – Operar validação de presença ao vivo
+    O sistema deve permitir que o professor organizador conduza a operação ao vivo do evento — abrir janelas de validação, exibir QR ou PIN aos alunos, acompanhar contagens em tempo real e encerrar o evento disparando emissão automática de certificados.
+
+RF-F3-003-a – Listar fila de solicitações para deliberação
+    O sistema deve exibir ao professor deliberante a fila de solicitações que aguardam sua decisão, com indicadores de SLA, filtros e suporte a deliberação em lote quando configurado no workflow.
+
+RF-F3-003-b – Deliberar solicitação (incl. deep-link JWT)
+    O sistema deve permitir que o professor deliberante defira, indefira, solicite ajustes ou encaminhe uma solicitação com parecer fundamentado, acessível pela fila ou por deep-link JWT de uso único enviado por e-mail, com registro imutável em auditoria.
+
+RF-F3-004 – Revisar atividades formativas (CAAF)
+    O sistema deve permitir que professores membros da CAAF revisem atividades formativas submetidas por alunos do seu curso, aprovando com horas validadas ou rejeitando com parecer, disparando emissão automática de certificado quando aprovada.
+
+RF-F3-005 – Emitir pareceres de estágio (orientador/COE)
+    O sistema deve permitir que orientadores e membros do COE visualizem estágios sob sua responsabilidade, emitam pareceres por documento e arquivem estágios concluídos.
+
+RF-F3-006 – Avaliar TCC (orientador/banca)
+    O sistema deve permitir que orientadores e membros de banca visualizem TCCs sob sua responsabilidade, baixem o arquivo final, registrem nota e parecer, e disparem emissão de certificado de conclusão quando aprovado e elegível.
+
+RF-F3-007 – Publicar comunicado para turma ou curso
+    O sistema deve permitir que o professor redija e publique comunicados em Markdown para turmas ou cursos sob sua responsabilidade, definindo prioridade e expiração, com entrega assíncrona via Outbox aos destinatários.
+
+5 COMISSOES ACADEMICAS
+
+RF-F4-001 – Gerenciar pool CAAF (atribuir e aprovar em lote)
+    O sistema deve oferecer aos membros da CAAF um painel do pool coletivo de atividades formativas submetidas pelos alunos do(s) curso(s) da comissão, permitindo self-assign, atribuição a colegas com visualização de carga, e aprovação em lote para atividades com presença já validada pelo sistema.
+
+RF-F4-002 – Gerenciar pool COE (atribuir estágios)
+    O sistema deve oferecer aos membros do COE um painel do pool coletivo de estágios aguardando atribuição de orientador, permitindo self-assign e alocação a colegas com visualização de carga, sem aprovação em lote de pareceres (sempre individuais em RF-F3-005).
+
+6 SECRETARIA ACADEMICA
+
+RF-F5-001 – Visualizar dashboard operacional da secretaria
+    O sistema deve apresentar à secretária um painel com KPIs operacionais, fila priorizada de solicitações, alertas SLA e agenda de eventos do dia, agregados pelo BFF e filtrados pelos cursos vinculados ao usuário.
+
+RF-F5-002-a – Triar fila de solicitações e monitorar atrasados
+    O sistema deve permitir que a secretária consulte, filtre e priorize a fila central de solicitações dos cursos de sua competência, aplique ações em massa de atribuição/encaminhamento e monitore solicitações com SLA vencido com exportação CSV.
+
+RF-F5-002-b – Abrir solicitação interna em nome do aluno
+    O sistema deve permitir que a secretária abra solicitações via wizard dinâmico em nome de alunos dos cursos de sua competência, reutilizando o fluxo do aluno com campo adicional de titular.
+
+RF-F5-002-c – Deliberar solicitação (secretaria, sem deep-link)
+    O sistema deve permitir que a secretária delimere solicitações pela fila (sem deep-link JWT), reutilizando a tela de deliberação do professor com parecer fundamentado e registro em auditoria.
+
+RF-F5-003 – Gerenciar cadastro de alunos
+    O sistema deve permitir busca, cadastro, edição, reset de senha e matrícula em disciplinas de alunos, com escopo por curso e auditoria de mutações.
+
+RF-F5-004-a – Manter cadastro de cursos
+    O sistema deve permitir CRUD de cursos com vínculo de coordenador, secretários e parâmetros de horas formativas, controlando escopo de `request.view_curso`.
+
+RF-F5-004-b – Manter cadastro de disciplinas
+    O sistema deve permitir CRUD de disciplinas vinculadas a cursos, com código único por curso, carga horária e flag ativa/inativa.
+
+RF-F5-004-c – Manter períodos e calendário acadêmico
+    O sistema deve permitir gestão de períodos letivos e eventos de calendário com tipos semânticos, impedindo sobreposição de períodos e alertando ausência de período vigente.
+
+RF-F5-005-a – Listar e exportar egressos
+    O sistema deve listar egressos com filtros e exportação CSV, exibindo situação do diploma e permitindo criação manual excepcional.
+
+RF-F5-005-b – Registrar colação de grau e entrega de diploma
+    O sistema deve permitir wizard de colação em lote com validação de elegibilidade, transição ALUNO → EGRESSO, registro de entrega física do diploma e notificação ao egresso.
+
+RF-F5-006 – Revisar autorizações de imagem em lote
+    O sistema deve exibir fila compacta de solicitações AUTORIZACAO_IMAGEM com thumbnails e permitir aprovação/rejeição em lote transacional.
+
+RF-F5-007 – Registrar atendimento presencial
+    O sistema deve permitir registro imutável de atendimentos presenciais com busca de aluno, categoria, resposta, anexo opcional e preview de notificação ao aluno.
+
+RF-F5-008-a – Gerenciar eventos institucionais (CRUD)
+    O sistema deve permitir CRUD de eventos formativos institucionais no escopo dos cursos vinculados à secretária, reutilizando componentes de RF-F3-002-a.
+
+RF-F5-008-b – Operar validação de presença (secretaria)
+    O sistema deve permitir operação ao vivo de eventos pela secretária, paridade funcional com RF-F3-002-b, incluindo encerramento com emissão automática de certificados anti-fraude.
+
+RF-F5-009 – Importar dados em lote via planilha
+    O sistema deve oferecer wizard de importação CSV/XLSX com preview linha a linha, validação assíncrona e confirmação transacional por lotes.
+
+RF-F5-010 – Solicitar exportações assíncronas
+    O sistema deve permitir solicitar exportações volumosas de forma assíncrona com histórico de jobs, download via URL pré-assinada e notificação por e-mail.
+
+RF-F5-011 – Visualizar estatísticas operacionais
+    O sistema deve exibir dashboards quantitativos com gráficos Recharts filtrados por período e curso, drill-down tabular e resumos acessíveis.
+
+RF-F5-012 – Gerenciar tarefas internas (kanban)
+    O sistema deve oferecer kanban de tarefas internas da secretaria (pendente/concluída), controlado por feature flag `tasks.enabled`, sem bloquear demais fluxos do MVP.
+
+7 COORDENACAO DE CURSO
+
+RF-F6-001 – Configurar parâmetros curriculares do curso
+    O sistema deve permitir que o coordenador designado configure parâmetros curriculares do curso — horas formativas mínimas, duração do calendário letivo, regras de banca de TCC e texto de regimento — com auditoria de alterações e sem retroação de elegibilidade já conquistada.
+
+RF-F6-002 – Visualizar relatórios analíticos de coordenação
+    O sistema deve oferecer ao coordenador dashboards analíticos com KPIs, gráficos de séries históricas (evasão, formativas, comparativo entre cursos, aprovação de formativas), alertas de threshold, pendências operacionais e atalhos HATEOAS — estendendo o padrão de RF-F5-011 com métricas exclusivas de coordenação.
+
+8 ADMINISTRACAO DA PLATAFORMA
+
+RF-F7-001 – Gerenciar usuários e reset de senha administrativo
+    O sistema deve permitir que o administrador gerencie todos os usuários (criar, editar, desativar, atribuir perfis via link) e dispare reset de senha por link JWT de uso único — sem nunca visualizar ou definir senhas em texto claro.
+
+RF-F7-002-a – Gerenciar perfis (roles) e atribuir a usuários
+    O sistema deve permitir CRUD de perfis (agregadores de authorities), proteger perfis pré-definidos do sistema e atribuir perfis a usuários via matriz checkbox, invalidando cache de capabilities.
+
+RF-F7-002-b – Gerenciar authorities e matriz FGAC
+    O sistema deve permitir visualizar e configurar capabilities granulares (authorities) e a matriz role×authority para controle de acesso fino (FGAC) sem alteração de código.
+
+RF-F7-003 – Configurar tipos de solicitação (workflow engine)
+    O sistema deve oferecer editor de 3 painéis para definir `form_schema` (JSON Schema) e `workflow_json` (state machine) de cada tipo de solicitação, com preview ao vivo, versionamento atômico e publicação controlada — núcleo ADR-003 DRY.
+
+RF-F7-004 – Gerenciar templates de comunicação
+    O sistema deve permitir CRUD de templates de e-mail/push em Markdown com placeholders dinâmicos, preview com variáveis de exemplo e versionamento imutável por revisão.
+
+RF-F7-005 – Monitorar Outbox e jobs agendados
+    O sistema deve exibir eventos Outbox (PENDING/SENT/FAILED/DEAD) e jobs agendados, permitindo reentrega manual de eventos falhos e alertando latência do dispatcher.
+
+RF-F7-006 – Pesquisar trilha de auditoria
+    O sistema deve permitir pesquisa imutável na trilha de auditoria com filtros por ator, ação, entidade e período, exibindo diff JSON antes/depois em drawer lateral.
+
+RF-F7-007 – Visualizar saúde do sistema (KPIs operacionais)
+    O sistema deve exibir KPIs operacionais (latência P95, Outbox pending, erros 5xx, uptime) via Spring Boot Actuator com polling e link para Grafana — fora do MVP (P3).
+
+9 FUNCIONALIDADES TRANSVERSAIS DE INTERFACE
+
+RF-F8-001 – Busca global (Command Palette)
+    O sistema deve permitir que qualquer usuário autenticado abra uma paleta de busca (`Ctrl+K` / `⌘K` ou clique na topbar), digite um termo e encontre alunos, solicitações, eventos ou usuários com resultados filtrados pelas capabilities do token JWT, navegando diretamente ao item selecionado.
+
+RF-F8-002 – Suporte e FAQ com abertura de ticket
+    O sistema deve permitir que qualquer usuário autenticado consulte FAQ dinâmico em Accordion acessível e, se não encontrar resposta, abra ticket de suporte com protocolo gerado — preferencialmente via `RequestType=SUPORTE_TECNICO` (workflow engine DRY).
+
+10 REQUISITOS TRANSVERSAIS DE ARQUITETURA
+
+RF-TR-001 – Motor genérico de solicitações (RequestType)
+    O sistema deve executar o ciclo de vida de todos os tipos de solicitação (meta: 19 tipos) a partir de configuração `RequestType` (`form_schema` JSON Schema + `workflow_json` state machine), sem duplicar código por tipo — núcleo ADR-003.
+
+RF-TR-002 – Hub de comunicação + entrega assíncrona (Outbox)
+    O sistema deve publicar comunicações institucionais e enfileirar eventos de domínio na tabela `outbox_event` para entrega assíncrona confiável (in-app, push, e-mail) sem RabbitMQ no MVP.
+
+RF-TR-003 – Emissão e verificação de certificados anti-fraude
+    O sistema deve emitir certificados somente a partir de eventos internos validados (presença completa ou formativa aprovada), gerar PDF canônico com hash SHA-256 assinado ED25519 e QR de verificação pública — nunca aceitar upload externo.
+
+RF-TR-004 – Auditoria imutável de comandos
+    O sistema deve registrar toda mutação de estado em `audit_log` append-only, com ator, ação, entidade alvo, payload antes/depois, IP e timestamp — sem endpoints DELETE/PATCH.
+
+RF-TR-005 – Autorização FGAC + UI orientada a HATEOAS `_links`
+    O sistema deve autorizar por capabilities granulares (authorities dot-notation) e expor ações disponíveis via `_links` HATEOAS — a UI é cega a perfis e renderiza botões somente quando o link existe.
+
+RF-TR-006 – BFF de dashboard contextual por perfil
+    O sistema deve agregar em uma chamada HTTP os KPIs, pendências, listas recentes e `_links` de atalhos do dashboard conforme o perfil ativo, com degradação graciosa se um submódulo falhar.
+
+RF-TR-007 – Notificações push + e-mail com fallback
+    O sistema deve entregar notificações por push (FCM/Expo) e e-mail com política de prioridade, agregação (digest), Do Not Disturb e fallback SMTP institucional.
+
+RF-TR-008 – Presença em eventos formativos v4.1 (modos configuráveis)
+    O sistema deve suportar confirmação de presença em eventos formativos internos com modos `QR_SINGLE`, `QR_DUAL`, `SECRET_SINGLE`, `SECRET_DUAL`, janelas temporais configuráveis e device binding — fora do escopo: chamada de aula regular (SIGA).
+
+
+APENDICE D - REQUISITOS NAO FUNCIONAIS
+
+1 SEGURANCA
+
+RNF-SEC-01 – Armazenamento de senha com Argon2id
+    O sistema deve armazenar todas as senhas de usuário exclusivamente com o algoritmo Argon2id, com os parâmetros mínimos recomendados pela OWASP: memória ≥ 47 MB, iterações ≥ 1, paralelismo = 1. É proibido o uso de MD5, SHA-1, SHA-256 ou bcrypt para hashing de senhas.
+
+RNF-SEC-02 – Autenticação JWT stateless com RS256
+    O sistema deve emitir tokens de acesso JWT assinados com RS256 (chave privada RSA), com TTL de 15 minutos. O refresh token deve ser opaco (UUID armazenado em banco), com TTL de 7 dias, armazenado no cliente como cookie `httpOnly; Secure; SameSite=Lax`. O access token deve ser armazenado apenas em memória JavaScript (nunca em `localStorage`).
+
+RNF-SEC-03 – Refresh token rotativo com detecção de reutilização
+    A cada uso do refresh token, o sistema deve emitir um novo token e invalidar o anterior (rotação). Se um token já marcado como utilizado (`isUsed = true`) for apresentado novamente, o sistema deve invalidar todas as sessões do usuário e registrar evento de auditoria `iam.suspicious_token_reuse`, indicando possível roubo de token.
+
+RNF-SEC-04 – Rate limiting em autenticação
+    O sistema deve limitar tentativas de autenticação para mitigar ataques de força bruta. Na rota `POST /auth/login`, o limite é de 5 tentativas por minuto por par `IP + identificador` (Bucket4j). Após 10 falhas consecutivas para o mesmo identificador, a conta é bloqueada por 15 minutos (resposta externa anti-enumeração idêntica à de credencial inválida). O endpoint de recuperação de senha (`POST /auth/recuperar-senha`) mantém limite de 3 tentativas por hora por IP. Quando o rate limit é excedido, o sistema retorna HTTP 429 com corpo RFC 7807.
+
+RNF-SEC-05 – Tokens de uso único para deep-links (JWT + JTI blacklist)
+    Todo link enviado por email (recuperação de senha, ação em solicitação por deep-link de professor) deve ser protegido por JWT RS256 de uso único, com JTI único armazenado em blacklist após consumo. O TTL máximo é 24 horas para recuperação de senha e 72 horas para ações de deliberação. O sistema deve rejeitar qualquer tentativa de reutilização com HTTP 401.
+
+RNF-SEC-06 – Cabeçalhos de segurança HTTP obrigatórios
+    Todas as respostas HTTP do backend devem incluir os seguintes cabeçalhos de segurança: `Strict-Transport-Security: max-age=31536000; includeSubDomains`; `X-Content-Type-Options: nosniff`; `X-Frame-Options: DENY`; `Referrer-Policy: strict-origin-when-cross-origin`; `Permissions-Policy: geolocation=(), camera=(), microphone=()`; Content-Security-Policy com nonce para scripts inline.
+
+RNF-SEC-07 – FGAC por capabilities — proibido autorização por role
+    Toda verificação de autorização deve ser feita por capability (authority) no formato `dominio.acao` (ex.: `request.deliberate`, `event.manage`), nunca por role (ex.: `ROLE_SECRETARIO`). O backend deve usar exclusivamente `@PreAuthorize("hasAuthority('dominio.acao')")`. O frontend deve renderizar botões condicionalmente apenas a partir de `_links` na resposta HATEOAS, sem verificar `user.role`.
+
+RNF-SEC-08 – Segredos via variáveis de ambiente — zero hardcoded
+    Nenhuma credencial, chave JWT, senha de banco, API key ou token de serviço externo pode ser hardcoded em código-fonte, `application.yml`, `docker-compose.yml` ou qualquer arquivo versionado. Todos os segredos são injetados via variáveis de ambiente. O arquivo `.env` deve estar no `.gitignore`; o `.env.example` (sem valores reais) deve estar versionado.
+
+RNF-SEC-09 – Anti-enumeração em endpoints de autenticação
+    Os endpoints de autenticação e recuperação de senha devem retornar respostas idênticas independentemente de o identificador existir ou não no banco, evitando enumeração de usuários. O tempo de resposta para "usuário não encontrado" deve ser equiparado ao de "senha incorreta" com uso de hash dummy (Argon2id dummy verify).
+
+RNF-SEC-10 – CORS com origens explícitas
+    A configuração CORS do backend deve listar explicitamente as origens permitidas a partir de variável de ambiente (`CORS_ALLOWED_ORIGINS`). É proibido o uso de `allowedOrigins = listOf("*")`. As origens permitidas incluem o domínio do frontend web e o scheme `capacitor://` para o app mobile.
+
+2 DESEMPENHO
+
+RNF-DES-01 – Latência P95 de endpoints de listagem
+    O tempo de resposta P95 de todos os endpoints de listagem paginada (ex.: `GET /solicitacoes`, `GET /eventos`, `GET /usuarios`) deve ser inferior a 300 ms em condições normais de carga (≤ 50 usuários simultâneos).
+
+RNF-DES-02 – Latência P95 de endpoints de detalhe
+    O tempo de resposta P95 de todos os endpoints de detalhe (ex.: `GET /solicitacoes/{id}`, `GET /usuarios/{id}`) deve ser inferior a 100 ms em condições normais de carga.
+
+RNF-DES-03 – Latência total de login
+    O tempo de resposta P95 do endpoint `POST /auth/login` — incluindo a verificação Argon2id (operação intencional e custosa) — deve ser inferior a 800 ms.
+
+RNF-DES-04 – Tempo de carregamento do dashboard (FCP e LCP)
+    O carregamento inicial do dashboard (`/inicio`) deve atingir First Contentful Paint (FCP) inferior a 1,5 s e Largest Contentful Paint (LCP) inferior a 3 s em conexão 4G simulada (10 Mbps, 40ms RTT).
+
+RNF-DES-05 – Latência de despacho do Outbox
+    O tempo entre a inserção de um evento na tabela `outbox_event` (status `PENDING`) e seu despacho efetivo (status `SENT`) deve ser inferior a 30 segundos em condições normais. O dispatcher é executado a cada 5 segundos pelo `@Scheduled`.
+
+RNF-DES-06 – Toda coleção retornada deve ser paginada
+    Nenhum endpoint de listagem pode retornar coleções sem paginação. Todo `GET /{resource}` deve aceitar parâmetros `page`, `size` (padrão 20, máximo 100) e `sort`. Queries sem `Pageable` devem falhar no ArchUnit.
+
+3 DISPONIBILIDADE
+
+RNF-DIS-01 – Backup diário automático do PostgreSQL
+    O banco de dados PostgreSQL deve ter backup diário automático no formato `pg_dump --format=custom`, armazenado no MinIO (bucket `backups`), com retenção mínima de 14 dias. O backup deve ser executado via cron ou GitHub Actions scheduled workflow.
+
+RNF-DIS-02 – Restore testado mensalmente
+    O procedimento de restore do banco de dados deve ser executado e validado em ambiente de staging pelo menos uma vez por mês, garantindo que os backups são efetivamente utilizáveis em caso de desastre.
+
+RNF-DIS-03 – Health checks e probes de readiness/liveness
+    O backend deve expor os endpoints de saúde via Spring Boot Actuator: `/actuator/health` (público, retorna `UP`/`DOWN`), `/actuator/health/liveness` e `/actuator/health/readiness` (para eventual deploy em Kubernetes). Os detalhes completos do health check devem ser acessíveis apenas para usuários autenticados com `system.observe`.
+
+RNF-DIS-04 – Observabilidade: alertas críticos de operação
+    O sistema de monitoramento deve ter alertas Prometheus/Grafana configurados para: (a) taxa de erros 5xx > 1% em janela de 5 minutos; (b) latência P99 > 2 s em janela de 5 minutos; (c) fila Outbox pendente > 200 eventos por mais de 2 minutos; (d) pool de conexões HikariCP com > 5 conexões pendentes por mais de 1 minuto.
+
+4 USABILIDADE E ACESSIBILIDADE
+
+RNF-UX-01 – WCAG 2.1 Nível AA
+    Todas as telas do sistema devem conformar com WCAG 2.1 Nível AA. Requisitos mínimos: contraste ≥ 4,5:1 para texto normal, ≥ 3:1 para texto grande (≥ 18pt); todos os elementos interativos acessíveis via teclado; `aria-live="polite"` em conteúdo dinâmico (erros de formulário, atualizações de status); `role="dialog"` + `aria-labelledby` + focus trap em modais.
+
+RNF-UX-02 – Responsividade a partir de 375px
+    Todas as telas do sistema web devem ser funcionais e legíveis em dispositivos com largura mínima de 375px (iPhone SE). Nenhum conteúdo pode ser truncado ou sobrepostos em 375px. A navegação lateral deve colapsar para overlay em telas menores que `lg` (1024px).
+
+RNF-UX-03 – Navegação completa por teclado
+    Todos os fluxos críticos (login, nova solicitação, deliberação) devem ser completáveis exclusivamente com teclado. A ordem de tabulação deve ser lógica e seguir a ordem visual dos elementos. O anel de foco (`focus ring`) deve ser sempre visível (`ring-2 ring-brand-primary`) quando o elemento tem foco via teclado.
+
+RNF-UX-04 – UI orientada a capacidades via HATEOAS
+    O frontend nunca deve renderizar botões de ação ou elementos de navegação com base no perfil (`user.role`) do usuário. Toda renderização condicional de ações deve ser baseada na presença do link correspondente em `_links` da resposta da API (padrão HATEOAS), consumido via o hook `useActions(resource)`.
+
+RNF-UX-05 – Estados de componente obrigatórios (loading, empty, error)
+    Todo componente que exibe dados carregados de API deve implementar obrigatoriamente três estados: (a) loading — exibir `DS/Skeleton` com a mesma estrutura visual do estado preenchido; (b) empty — exibir `DS/EmptyState` com mensagem descritiva e, quando pertinente, ação de criação; (c) error — exibir `DS/AlertBanner variante "danger"` com opção de retry.
+
+5 MANUTENIBILIDADE
+
+RNF-MAN-01 – Cobertura de testes mínima
+    O projeto deve manter cobertura mínima de testes automatizados: camada de domínio ≥ 85% (JUnit 5 + Kotest, puro Kotlin sem Spring), camada de aplicação (casos de uso) ≥ 70% (MockK), total do backend ≥ 75%. O frontend deve ter cobertura de hooks e utilitários ≥ 70% (Vitest).
+
+RNF-MAN-02 – Zero violações de lint e format
+    O código-fonte deve passar sem erros nas ferramentas de lint e formatação: backend com `ktlint` (formatação) e `detekt` (análise estática); frontend com `eslint` e `prettier`. Violações do tipo `error` bloqueiam o merge. Violações `warning` são toleradas se justificadas em comentário.
+
+RNF-MAN-03 – Complexidade ciclomática ≤ 10
+    Nenhuma função ou método deve ter complexidade ciclomática de McCabe superior a 10. Funções com complexidade > 10 devem ser refatoradas antes do merge.
+
+RNF-MAN-04 – DRY: blocos duplicados < 3%
+    A porcentagem de blocos de código duplicados no projeto deve ser inferior a 3%, medida por ferramenta de análise estática. A estratégia DRY é central para o TCC: o motor genérico de workflow substitui 57 telas quase idênticas do legado; o `DynamicForm` renderiza 19 tipos; value objects evitam validação duplicada de CPF, email e GRR.
+
+RNF-MAN-05 – Clean Architecture enforced por ArchUnit
+    As regras de dependência da Clean Architecture devem ser verificadas automaticamente por ArchUnit nos testes: (a) o pacote `domain/` não pode importar nenhuma classe de `org.springframework`, `jakarta.persistence`, ou `org.hibernate`; (b) o pacote `infrastructure/` de um módulo não pode ser importado pelo `infrastructure/` de outro módulo; (c) módulos comunicam-se apenas por interfaces em `application/ports/`.
+
+6 CONFIABILIDADE
+
+RNF-CON-01 – Padrão Outbox: atomicidade garantida para notificações
+    Toda mudança de estado que deve gerar notificação (email, push) deve persistir o evento na tabela `outbox_event` na mesma transação da mudança de estado da entidade principal. É proibido enviar email/push de forma síncrona ou em transação separada. O dispatcher `@Scheduled` processa a fila de forma assíncrona e independente.
+
+RNF-CON-02 – Migrations Flyway imutáveis e versionadas
+    Toda alteração de schema de banco de dados deve ser feita por arquivo Flyway `V###__descricao.sql` com número de versão incrementado. É proibido editar qualquer arquivo de migration já aplicado a qualquer ambiente. Correções devem ser novas migrations (ex.: `V012__fix_index_request.sql`). A validação Flyway (`spring.flyway.validate-on-migrate=true`) deve estar sempre ativa.
+
+RNF-CON-03 – Respostas de erro no formato RFC 7807 Problem Details
+    Todas as respostas de erro HTTP 4xx e 5xx devem ter Content-Type `application/problem+json` e body conformando com RFC 7807, contendo no mínimo os campos: `type` (URI de documentação do erro), `title` (descrição curta), `status` (código HTTP), `detail` (mensagem humanizada), `instance` (URI da requisição). O campo `errors` pode ser adicionado para erros de validação (HTTP 422).
+
+RNF-CON-04 – Eliminação de queries N+1
+    Nenhum endpoint de listagem ou detalhe pode resultar em problema de N+1 queries (uma query adicional por item da lista). Todos os relacionamentos necessários para resposta devem ser carregados em um único `JOIN FETCH` ou via `@EntityGraph`. Queries de leitura devem usar projeções (`interface Projection`) para listas.
+
+7 PORTABILIDADE
+
+RNF-POR-01 – Plataformas-alvo: Web e Mobile nativo
+    O sistema deve funcionar em duas plataformas: (a) Web: React 18 + Vite, compatível com os navegadores listados em RNF-CMP-03; (b) Mobile: React Native + Expo SDK 50+, compatível com Android 10+ e iOS 15+. Funcionalidades P0 (login, dashboard, nova solicitação, confirmar presença) devem estar disponíveis em ambas as plataformas.
+
+RNF-POR-02 – Ambiente de desenvolvimento reproducível (Docker Compose)
+    O ambiente de desenvolvimento completo (PostgreSQL, MinIO, Mailpit, backend, Prometheus, Grafana, Loki) deve ser inicializável com um único comando `docker compose up -d` a partir do diretório raiz. O README deve documentar os 5 comandos necessários para subir tudo do zero.
+
+RNF-POR-03 – Armazenamento de arquivos via API S3-compatível
+    Todo armazenamento de arquivos (anexos de solicitação, comprovantes de formativas, certificados PDF gerados) deve usar a API S3-compatível via MinIO (desenvolvimento/TCC) ou AWS S3 (produção), configurável por variável de ambiente `STORAGE_ENDPOINT`. O código de aplicação não deve referenciar o sistema de arquivos local.
+
+8 COMPATIBILIDADE
+
+RNF-CMP-01 – API documentada em OpenAPI 3.x
+    Todos os endpoints da API REST devem ser documentados no padrão OpenAPI 3.x, gerados automaticamente pelo SpringDoc 2.x a partir das anotações `@Operation`, `@ApiResponse` e `@Tag`. O Swagger UI deve estar acessível em `/swagger-ui` em todos os ambientes não-produção. Os tipos TypeScript do frontend devem ser gerados a partir da spec OpenAPI via `openapi-typescript`.
+
+RNF-CMP-02 – PostgreSQL 16 com extensões obrigatórias
+    O banco de dados deve ser PostgreSQL 16 (mínimo 14) com as extensões: `uuid-ossp` (função `uuid_generate_v7()`), `pgcrypto` (geração segura de dados aleatórios), `citext` (comparação case-insensitive para email), `pg_trgm` (busca por similaridade textual). A migration `V000__extensions.sql` deve ser a primeira a ser aplicada.
+
+RNF-CMP-03 – Compatibilidade com navegadores modernos
+    O frontend web deve ser compatível com as últimas 2 versões dos navegadores: Chrome, Firefox, Safari e Edge. O transpile via Vite deve garantir compatibilidade sem polyfills manuais. É aceita degradação graceful (não quebra, mas pode omitir recursos visuais avançados) em IE e versões muito antigas.
+
+9 CONFORMIDADE LEGAL
+
+RNF-LGL-01 – LGPD: tratamento mínimo de dados pessoais
+    O sistema deve: (a) coletar apenas os dados pessoais necessários para a finalidade específica de cada funcionalidade (princípio da minimização); (b) registrar o momento do aceite de termos/LGPD do usuário no campo `usuario.metadata.aceite_lgpd_em` com timestamp; (c) permitir que o usuário exporte seus dados pessoais via tela de perfil; (d) não logar CPF, GRR completo, senha ou dados bancários em logs de aplicação.
+
+RNF-LGL-02 – Certificados gerados pelo sistema com trilha criptográfica
+    Todos os certificados de participação emitidos pelo sistema devem: (a) ser gerados automaticamente pelo sistema quando o evento conclui (nunca via upload de PDF externo); (b) ter hash SHA-256 do PDF canônico armazenado em `certificate.hash_sha256`; (c) ser assinados com chave ED25519 do servidor; (d) conter QR Code apontando para `/publico/verificar-certificado/:hash`; (e) chave pública publicada em `/.well-known/jwks.json` para verificação offline.

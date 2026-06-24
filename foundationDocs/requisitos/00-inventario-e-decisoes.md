@@ -52,7 +52,7 @@
 | RF F6 | `foundationDocs/requisitos/por-fase/RF-F6-coordenacao.md` | Etapa 8 ✅ |
 | RF F7 | `foundationDocs/requisitos/por-fase/RF-F7-admin.md` | Etapa 9 ✅ |
 | RF F8 | `foundationDocs/requisitos/por-fase/RF-F8-cross-cutting.md` | Etapa 10 ✅ |
-| RF transversais | `foundationDocs/requisitos/por-fase/RF-TR-transversais.md` | Etapa 11 |
+| RF transversais | `foundationDocs/requisitos/por-fase/RF-TR-transversais.md` | Etapa 11 ✅ |
 
 ---
 
@@ -115,8 +115,8 @@
 
 **Identificado em:** Etapa 2  
 **Descrição:** US-F0-001 (RN-F0.1-06, CA-04) e `fluxos_por_perfil.md` §1 F0.1 especificam **5 tentativas por minuto** por IP + identificador. `agents/security-engineer.md` e RNF-SEC-04 (Etapa 1) documentam **5 tentativas por 15 minutos**.  
-**Regra aplicada:** Precedência HU > agents. RF-F0-001 e critérios de aceitação usam **5/min**. RNF-SEC-04 deve ser alinhado na Etapa 12 (revisão de cobertura) ou corrigido antes do merge.  
-**Status:** Decisão tomada na Etapa 2; correção de RNF-SEC-04 pendente. ⬜
+**Regra aplicada:** Precedência HU > agents. RF-F0-001 e critérios de aceitação usam **5/min**. RNF-SEC-04 alinhado na Etapa 12.  
+**Status:** Decisão tomada na Etapa 2; correção de RNF-SEC-04 aplicada. ✅
 
 ---
 
@@ -155,7 +155,7 @@
 | Q-001 | Os UC IDs provisórios na matriz estão corretos? | F0–F6 | Média | ✅ Resolvido para F0–F6 (ver matriz em `00-indice-requisitos.md`) |
 | Q-002 | US-F1-011 e US-F5-007 são o mesmo domínio? | F1, F5 | Baixa | ✅ Capacidades distintas: aluno dá ciência (`service_record.view_own`); secretaria registra (`F5`). RFs separados. |
 | Q-003 | US-F0-005 deve gerar RF formal? | F0 | Baixa | ✅ Sim — RF-F0-005 gerado na Etapa 2 |
-| Q-004 | RF-TR-008 listado também em F1/F3/F5? | F1, F3, F5, TR | Média | ⬜ Pendente |
+| Q-004 | RF-TR-008 listado também em F1/F3/F5? | F1, F3, F5, TR | Média | ✅ RF-TR-008 é canônico; RF-F1-009, RF-F3-002, RF-F5-008 referenciam sem duplicar regras |
 
 ---
 
@@ -173,7 +173,9 @@
 | 2026-06-23 | 0.8 | Etapa 8 — 2 RFs F6; UCs UC-CAD-05 e UC-ADM-09; F6.3 comissões delegado a F7 | 8 |
 | 2026-06-23 | 0.9 | Etapa 9 — 8 RFs F7; US-F7-002 subdividido (DEC-001); matriz F7 corrigida (rotas, UCs UC-COM-03/ADM-04/05); RF-F7-007 P3 extra-MVP | 9 |
 | 2026-06-23 | 1.0 | Etapa 10 — 2 RFs F8; UCs corrigidos UC-ADM-10 (busca) e UC-ADM-11 (suporte); rota `/buscar?q=`; **51/51 HUs cobertas** | 10 |
+| 2026-06-23 | 1.1 | Etapa 11 — 8 RF-TR consolidados; mapa de consumo DRY; Q-004 resolvida (presença v4.1) | 11 |
+| 2026-06-23 | 1.2 | Etapa 12 — Revisão final; CONF-004 resolvido (RNF-SEC-04 → 5/min); checklist §7 completo; campanha encerrada | 12 |
 
 ---
 
-*Última atualização: 2026-06-23 — Etapa 10 concluída*
+*Última atualização: 2026-06-23 — Campanha de requisitos concluída (Etapas 0–12)*

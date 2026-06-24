@@ -10,10 +10,10 @@
 
 ## Como usar este prompt
 
-1. Copie **integralmente** a seção **§ PROMPT PARA COLAR NA IA** (final deste arquivo) para a ferramenta de geração de imagem/diagrama escolhida.
-2. Se a ferramenta aceitar **imagem de referência**, anexe o exemplo de fluxograma OLTP→ETL→OLAP (estilo acadêmico com cilindros de banco, caixas explicativas e setas rotuladas).
-3. Se a saída ficar ilegível, peça uma **segunda iteração** pedindo: *"aumentar fonte das caixas explicativas, reduzir texto nas setas, manter todos os rótulos em português"*.
-4. Salve o resultado em `foundationDocs/DB/figuras/` com nome sugerido: `FIGURA-1-arquitetura-completa-banco-dados.png`.
+1. **Gemini (imagem):** copie só a seção **§ PROMPT PARA COLAR NA IA** (já inclui layout em grade, mapa de setas e regras anti-erro). Anexe imagem de referência de estilo, se tiver. Veja também **§ Erros comuns** e **§ Uso no Gemini**.
+2. **Outras IAs de imagem:** mesmo bloco final; se ilegível, peça segunda iteração com o checklist do rodapé do prompt.
+3. **Chat (refinar):** pode colar o documento inteiro, mas **não** cole o prompt final duas vezes.
+4. Salve o resultado em `foundationDocs/DB/figuras/FIGURA-1-arquitetura-completa-banco-dados.png`.
 
 **Ferramentas sugeridas:** DALL·E, Midjourney, Ideogram, Gemini (imagem), Napkin AI, Lucidchart (com prompt), ou Figma Make com modo diagrama.
 
@@ -256,6 +256,10 @@ Reproduzir o **layout e a linguagem visual** do exemplo anexo (fluxograma "Arqui
 - ❌ MD5, sessões server-side, filesystem local `C:\Users\...` (legado)  
 - ❌ Entidades removidas do modelo: `DELIBERATION`, `FORM_SCHEMA`, `WORKFLOW_DEFINITION` como tabelas separadas  
 - ❌ `ATTENDANCE_CHECKIN` — o nome correto é `attendance_session`  
+- ❌ **Duplicar** qualquer bloco (especialmente Backend / BLOCO 2)  
+- ❌ **Reutilizar** círculos numerados 1/2/3 em caixas de blocos diferentes  
+- ❌ Seta **MinIO → Analítico** (analítico consulta só o OLTP)  
+- ❌ Pular **BLOCO 6** (Auditoria) — numerar 1 a 8 sem saltos  
 - ❌ Geofence, BLE ou trust score no módulo de presença v4.1
 
 ---
@@ -270,115 +274,248 @@ Reproduzir o **layout e a linguagem visual** do exemplo anexo (fluxograma "Arqui
 
 ---
 
+## Erros comuns em gerações anteriores (corrigir no prompt)
+
+| Erro observado | Correção obrigatória no novo desenho |
+|----------------|--------------------------------------|
+| Círculo **"1"** repetido em Blocos 1, 2, 3 e 4 | Cada bloco tem **um único selo** "BLOCO N" (N de 1 a 8); listas internas usam **bullets (•)**, não círculos 1/2/3 |
+| **Bloco 2 (Backend) duplicado** (duas caixas idênticas) | Backend aparece **uma única vez**, entre Entrada e OLTP |
+| Pulou o **Bloco 6** (foi direto de 5 para 7) | Auditoria é **BLOCO 6**, faixa inferior central |
+| Seta **MinIO → Analítico** | **Proibido.** Analítico lê **somente** do OLTP (SELECT agregado) |
+| Setas cruzadas no centro | Seguir o **mapa de setas** da grade abaixo; rotas paralelas, sem cruzar |
+| OLAP / ETL Python | Não incluir |
+
+---
+
+## Uso no Gemini (imagem)
+
+1. Anexe a imagem de **referência de estilo** (fluxograma bege com cilindros), se tiver.
+2. Cole **somente** o bloco **§ PROMPT PARA COLAR NA IA** abaixo (já contém layout + conteúdo + anti-erros).
+3. **Não** cole o prompt duas vezes — o documento inteiro é opcional só para iteração em chat.
+4. Se a imagem sair errada, peça refação citando: *"corrija: Bloco 2 duplicado, círculos 1 repetidos, seta MinIO→Analítico"*.
+
+---
+
 ## PROMPT PARA COLAR NA IA
 
-Copie o bloco abaixo **na íntegra**:
+Copie o bloco abaixo **na íntegra** (recomendado para Gemini com geração de imagem):
 
 ---
 
 ```
-Crie um fluxograma horizontal em estilo acadêmico/TCC, com fundo bege claro (#F5F0E1), título grande amarelo-laranja no canto superior esquerdo: "Arquitetura completa do Banco de Dados — SecretariaOnline2".
+TAREFA: Gere UMA única imagem PNG/SVG — fluxograma horizontal de arquitetura de dados, estilo acadêmico/TCC, em português do Brasil. Não descreva em texto: produza a figura completa.
 
-Imite o layout visual de um fluxograma de arquitetura de dados com cilindros de banco de dados, retângulos de processamento, ícones de usuário e caixas explicativas numeradas com cantos arredondados — fluxo principal da ESQUERDA para a DIREITA, com setas rotuladas.
+TÍTULO (canto superior esquerdo, amarelo-laranja #E8A317, fonte grande):
+"Arquitetura completa do Banco de Dados — SecretariaOnline2"
 
-DOMÍNIO: sistema acadêmico universitário (secretaria online) — NÃO é um sistema de ciências biológicas.
+FUNDO: bege claro #F5F0E1 | Orientação: paisagem 16:9 | Alta resolução | Texto legível (sans-serif)
 
-=== BLOCO 1 (esquerda) — ENTRADA ===
-Ícones: computador + smartphone.
-Rótulo: "Usuários do Sistema Acadêmico" (Aluno, Professor, Secretaria, Coordenador, Admin, Público).
-Caixa explicativa bege:
-1. Web React + Mobile Expo
-2. API REST com JWT e HATEOAS (FGAC)
-3. Upload via URL pré-assinada (arquivos não vão para o banco relacional)
-Seta para direita: "Requisições REST + JWT"
+DOMÍNIO: portal de secretaria acadêmica universitária (UFPR SEPT). NÃO é biologia, ciência de dados com Python, nem data warehouse corporativo genérico.
 
-=== BLOCO 2 — BACKEND ===
-Retângulo azul escuro: "Backend Spring Boot 3 (Monólito Modular)".
-Caixa explicativa:
-1. 9 módulos: iam, academico, solicitacoes, formativas, estagio, tcc, presenca, comunicacao, auditoria
-2. Flyway versiona o schema SQL
-3. Toda mutação grava audit_log
-Seta: "Persiste / Consulta"
+═══════════════════════════════════════════════════════════════
+REGRAS ANTI-ERRO (OBRIGATÓRIAS — violar invalida a figura)
+═══════════════════════════════════════════════════════════════
 
-=== BLOCO 3 (DESTAQUE, cilindro vermelho grande) — OLTP ===
-Cilindro vermelho: "Banco OLTP (PostgreSQL 16)".
-Caixa explicativa vermelho claro:
-1. Registro operacional do domínio acadêmico
-2. 31 tabelas normalizadas (3NF) em 9 módulos
-3. UUIDv7, TIMESTAMPTZ, JSONB para formulários dinâmicos
-4. Extensões pgcrypto, citext; migrations Flyway
-Lista compacta dos módulos: IAM, Acadêmico, Solicitações (engine genérica 19 tipos), Formativas, Estágio, TCC, Comunicação/Outbox, Presença v4.1, Certificados/Auditoria.
+R1. Existem EXATAMENTE 8 blocos numerados (BLOCO 1 … BLOCO 8). Cada bloco aparece UMA ÚNICA VEZ na imagem. NUNCA duplicar o Backend nem qualquer outro bloco.
 
-Cinco setas saindo do cilindro:
-- "Enfileira eventos" → Bloco 4
-- "Metadados de arquivo" → Bloco 5 (MinIO)
-- "Registra imutável" → faixa inferior Auditoria
-- "Agrega (SELECT)" → Bloco 7
-- "Dispara job" → Bloco 4
+R2. Identificação dos blocos: use selo retangular ou faixa com texto "BLOCO 1", "BLOCO 2", … "BLOCO 8" — um selo por bloco, cores distintas por camada.
 
-=== BLOCO 4 (centro) — PROCESSAMENTO ASSÍNCRONO ===
-Retângulo azul petróleo: "Processamento Assíncrono (Outbox + Scheduled Jobs)".
-NÃO rotular como ETL Python.
-Caixa explicativa azul escuro:
-1. Padrão Outbox: outbox_event na mesma TX ACID
-2. Dispatcher @Scheduled a cada 5s (até 50 eventos)
-3. Export Jobs: CSV → MinIO → e-mail
-4. Import Jobs: validação em lote → OLTP
-5. Geração de certificados PDF (SHA-256 + ED25519)
-Setas: "Envia" → Notificações; "Grava arquivo" → MinIO; retorno pontilhado → OLTP
+R3. PROIBIDO usar círculos numerados ① ② ③ como identificador de bloco nas caixas explicativas — isso causou repetição do número "1" em blocos diferentes na geração anterior. Dentro das caixas explicativas, use bullets (•) ou travessões (—), nunca reutilizar 1/2/3 em blocos distintos.
 
-=== BLOCO 5 — MINIO ===
-Cilindro roxo/teal: "Object Storage (MinIO / S3)".
-Caixa explicativa:
-1. PDFs, imagens, CSVs fora do Postgres
-2. Tabelas guardam storage_key + sha256
-3. Upload/download por URL pré-assinada
-4. Exportações expiram em 7 dias
+R4. O cilindro PostgreSQL OLTP (BLOCO 3) é o MAIOR elemento visual — núcleo central do diagrama.
 
-=== FAIXA INFERIOR — AUDITORIA ===
-Retângulo cinza: "Auditoria Imutável (audit_log)".
-Caixa: append-only, ator+ação+alvo+JSON antes/depois, consulta admin.
+R5. PROIBIDO: OLAP, Data Warehouse, ETL Python, Pandas, RabbitMQ, Kafka, Redis, IA/robô analisando dados, MongoDB.
 
-=== BLOCO 7 — ANALÍTICO MVP ===
-Cilindro azul claro: "Consultas Analíticas (MVP — sobre OLTP)".
-NÃO mostrar OLAP/Data Warehouse como fluxo principal.
-Caixa explicativa:
-1. Dashboard /secretaria/estatisticas
-2. Gráficos Recharts (solicitações, formativas, estados)
-3. Cache 5 min; drill-down tabular
-Caixa TRACEJADA menor: "Evolução: réplica read-only PostgreSQL"
-Seta: "Envia dados agregados" → Visualização
+R6. A camada Analítica (BLOCO 7) consulta APENAS o PostgreSQL OLTP. NÃO desenhar seta de MinIO para o Analítico.
 
-=== BLOCO 8 (direita) — SAÍDA ===
-Ícone verde (gráficos): "Visualização Secretaria/Coordenação".
-Ícone azul (envelope+sino): "Notificações (E-mail + Push FCM + Hub)".
-Figura: "Usuário".
-Setas: "Visualização" e "Notificação" → Usuário.
-Loop de retorno: Usuário "Seleciona filtros" → Consultas Analíticas; Usuário "Baixa exportação" → MinIO.
+R7. Fluxo principal da esquerda para a direita: Entrada → Backend → OLTP → ramificações → Saída.
 
-=== OPCIONAL canto inferior direito ===
-Ícone QR: "Verificador Público de Certificados" (/publico/verificar-certificado/:hash), sem login.
+═══════════════════════════════════════════════════════════════
+GRADE ESPACIAL (posicionar os 8 blocos nestas células — não sobrepor)
+═══════════════════════════════════════════════════════════════
 
-RODAPÉ: "Figura X – Arquitetura completa do banco de dados do SecretariaOnline2". Fonte: Os autores (2026).
+Linha SUPERIOR (fluxo principal, esquerda → direita):
+  [BLOCO 1 Entrada] → [BLOCO 2 Backend] → [BLOCO 3 OLTP] → [BLOCO 4 Async] → [BLOCO 7 Analítico] → [BLOCO 8 Saída]
 
-ESTILO: limpo, profissional, cores distintas por camada (vermelho=OLTP, azul escuro=processamento, roxo=MinIO, azul claro=analítico, verde=visualização, cinza=auditoria). Texto legível em português. Alta resolução, paisagem 16:9.
+Linha MÉDIA (paralelo ao OLTP, à direita do centro):
+  [BLOCO 5 MinIO] — abaixo ou à direita do BLOCO 4, SEM sobrepor setas do OLTP
+
+Linha INFERIOR (faixa horizontal contínua, abaixo do OLTP):
+  [BLOCO 6 Auditoria] — centralizada sob o BLOCO 3
+
+Canto inferior direito (pequeno, opcional):
+  [Verificador Público de Certificados] — ícone QR, fora da grade principal
+
+═══════════════════════════════════════════════════════════════
+MAPA DE SETAS (desenhar TODAS; evitar cruzamentos no centro)
+═══════════════════════════════════════════════════════════════
+
+FLUXO PRINCIPAL (setas sólidas, esquerda→direita):
+  B1 ─"Requisições REST + JWT"→ B2 ─"Persiste / Consulta"→ B3
+
+SAÍDAS DO OLTP (B3) — rotas separadas, sem cruzar:
+  B3 ─"Enfileira eventos (outbox_event)"→ B4
+  B3 ─"Metadados (storage_key, sha256)"→ B5
+  B3 ─"Registra imutável"→ B6  (seta para baixo)
+  B3 ─"Agrega (SELECT)"→ B7
+
+PROCESSAMENTO ASSÍNCRONO (B4):
+  B4 ─"Grava arquivo (PDF/CSV)"→ B5
+  B4 ─"Envia notificação"→ B8 (componente Notificações dentro do B8)
+  B4 - - -"Atualiza status" - - -→ B3  (seta PONTILHADA de retorno)
+
+MINIO (B5):
+  B5 - - -"Download (URL pré-assinada)" - - -→ Usuário no B8  (seta pontilhada)
+
+ANALÍTICO (B7):
+  B7 ─"Dados agregados"→ B8 (componente Visualização)
+  NÃO conectar B5 → B7
+
+RETORNO DO USUÁRIO (setas pontilhadas):
+  Usuário (B8) - - -"Seleciona filtros (período, curso)" - - -→ B7
+
+AUDITORIA (B6):
+  Somente entrada vinda de B3. Sem seta de saída para OLTP (append-only, consulta admin).
+
+═══════════════════════════════════════════════════════════════
+CONTEÚDO DE CADA BLOCO (texto exato ou muito próximo)
+═══════════════════════════════════════════════════════════════
+
+─── BLOCO 1 — ENTRADA (faixa bege/amarelo claro, extrema esquerda) ───
+Selo: "BLOCO 1 — ENTRADA"
+Ícones: monitor (web) + smartphone (mobile)
+Título: "Usuários do Sistema Acadêmico"
+Subtítulo em linha: Aluno · Professor · Secretaria · Coordenador · Admin · Público
+Caixa explicativa (bullets, fundo bege):
+  • Web: React 18 + Vite + TanStack Query
+  • Mobile: React Native + Expo
+  • API REST stateless; JWT + HATEOAS (FGAC — UI cega a perfis)
+  • Arquivos: upload/download via URL pré-assinada (bytes NÃO vão ao Postgres)
+
+─── BLOCO 2 — BACKEND (retângulo azul escuro #2C3E50, UMA vez só) ───
+Selo: "BLOCO 2 — BACKEND"
+Título no retângulo: "Backend Spring Boot 3 (Monólito Modular)"
+Linguagem: Kotlin
+Caixa explicativa (fundo azul claro #D6EAF8, bullets):
+  • 9 módulos: iam · academico · solicitacoes · formativas · estagio · tcc · presenca · comunicacao · auditoria/arquivos
+  • Clean Architecture por módulo (domain → application → infrastructure → api)
+  • Flyway: migrations SQL versionadas (V###__*.sql)
+  • Toda mutação de estado grava audit_log (via BLOCO 6)
+
+─── BLOCO 3 — OLTP (cilindro vermelho #C0392B, MAIOR do diagrama) ───
+Selo: "BLOCO 3 — NÚCLEO TRANSACIONAL"
+Título no cilindro: "Banco OLTP (PostgreSQL 16)"
+Caixa explicativa (fundo rosa claro #FADBD8, bullets):
+  • Registro operacional: solicitações, presença, formativas, estágio, TCC, comunicações
+  • 31 tabelas · 3NF · 9 módulos de domínio
+  • UUIDv7 · TIMESTAMPTZ · JSONB (form_schema, workflow_json, request.dados)
+  • Extensões: pgcrypto, citext · Schema via Flyway
+Lista compacta (uma linha ou duas, fonte menor):
+  M1 IAM · M2 Acadêmico · M3 Solicitações (19 tipos, engine genérica) · M4 Formativas · M5 Estágio · M6 TCC · M7 Comunicação/Outbox · M8 Presença v4.1 · M9 Certificados
+
+─── BLOCO 4 — PROCESSAMENTO ASSÍNCRONO (retângulo azul petróleo #1A5276) ───
+Selo: "BLOCO 4 — PROCESSAMENTO ASSÍNCRONO"
+Título: "Outbox + Scheduled Jobs (Kotlin)"
+NÃO escrever "ETL Python"
+Caixa explicativa (fundo #AED6F1, bullets):
+  • Outbox: INSERT outbox_event na mesma transação ACID da regra de negócio
+  • OutboxDispatcher: @Scheduled a cada 5 s (até 50 eventos PENDING)
+  • Export Jobs: gera CSV → MinIO → e-mail (exports.ready)
+  • Import Jobs: valida CSV em lotes de 1.000 → persiste no OLTP
+  • Certificados: PDF gerado pelo sistema + hash SHA-256 + assinatura ED25519
+
+─── BLOCO 5 — OBJECT STORAGE (cilindro roxo #6C3483) ───
+Selo: "BLOCO 5 — ARMAZENAMENTO DE OBJETOS"
+Título no cilindro: "MinIO (S3-compatible)"
+Caixa explicativa (fundo #E8DAEF, bullets):
+  • Blobs fora do Postgres: PDFs, imagens, CSVs de exportação
+  • Postgres guarda só: storage_key, sha256, mime_type
+  • Upload: URL pré-assinada → PUT direto no MinIO
+  • Download: URL pré-assinada (15 min); exports expiram em 7 dias
+
+─── BLOCO 6 — AUDITORIA (faixa cinza #7F8C8D, linha INFERIOR, sob o OLTP) ───
+Selo: "BLOCO 6 — AUDITORIA"
+Título: "audit_log (imutável, append-only)"
+Caixa explicativa (fundo #EAECEE, bullets):
+  • Cada comando de mutação: ator + ação + alvo + JSON antes/depois
+  • Consulta admin: /admin/audit-log
+  • Importações/exportações: checksum SHA-256 registrado
+  • Sem UPDATE/DELETE — trilha de conformidade (LGPD)
+
+─── BLOCO 7 — ANALÍTICO MVP (cilindro azul claro #2980B9) ───
+Selo: "BLOCO 7 — CONSULTAS ANALÍTICAS"
+Título no cilindro: "Estatísticas (MVP — sobre OLTP)"
+NÃO rotular "OLAP" nem "Data Warehouse"
+Caixa explicativa (fundo #D4E6F1, bullets):
+  • Tela: /secretaria/estatisticas · API: GET /reports/secretary
+  • Gráficos Recharts: solicitações por tipo, evolução temporal, estados, horas formativas
+  • Cache backend: 5 min · drill-down tabular paginado
+Caixa TRACEJADA menor (evolução futura, fonte pequena):
+  "Evolução: réplica PostgreSQL read-only (6–12 meses)"
+
+─── BLOCO 8 — SAÍDA (extrema direita, ícones + usuário) ───
+Selo: "BLOCO 8 — SAÍDA"
+Dois componentes lado a lado:
+  [Ícone gráfico verde #27AE60] "Visualização — Secretaria / Coordenação"
+  [Ícone envelope+sino azul] "Notificações — E-mail · Push FCM · Hub in-app"
+Figura humana simplificada: "Usuário"
+Caixa explicativa verde claro (bullets):
+  • Dashboards e tabelas (Recharts)
+  • E-mail HTML (TemplateEngine) + push mobile
+  • Hub: communication + communication_delivery
+Setas saindo para o Usuário: "Visualização" e "Notificação"
+
+─── EXTRA (canto inferior direito, pequeno) ───
+Ícone QR + texto: "Verificador Público de Certificados"
+Subtexto: /publico/verificar-certificado/:hash (sem login)
+Setas tracejadas desde B3 (hash) e B5 (PDF) — opcional, não poluir o centro
+
+═══════════════════════════════════════════════════════════════
+PALETA E HIERARQUIA VISUAL
+═══════════════════════════════════════════════════════════════
+
+• Vermelho = OLTP (maior cilindro, centro-esquerda)
+• Azul escuro = Backend | Azul petróleo = Async | Azul claro = Analítico
+• Roxo = MinIO | Verde = Visualização | Cinza = Auditoria | Bege = Entrada
+• Setas sólidas = fluxo principal | Setas pontilhadas = retorno/download/filtros
+• Mínimo de cruzamento de setas no centro — rotear por cima ou por baixo do cilindro OLTP
+
+═══════════════════════════════════════════════════════════════
+RODAPÉ (barra inferior, fonte menor, centralizado)
+═══════════════════════════════════════════════════════════════
+
+"Figura X – Arquitetura completa do banco de dados do SecretariaOnline2: PostgreSQL 16 (OLTP), MinIO, Outbox assíncrono, auditoria imutável e estatísticas com cache sobre o OLTP (MVP)."
+"Fonte: Os autores (2026)."
+
+CHECKLIST FINAL antes de finalizar a imagem:
+☐ 8 blocos, cada um uma vez
+☐ Selos "BLOCO 1"…"BLOCO 8" únicos (sem círculos 1 repetidos)
+☐ Backend não duplicado
+☐ Sem seta MinIO → Analítico
+☐ OLTP é o maior elemento
+☐ Sem OLAP / Python / RabbitMQ
+☐ Português em todos os rótulos
 ```
 
 ---
 
 ## Checklist pós-geração
 
-- [ ] Título e rodapé em português  
-- [ ] PostgreSQL OLTP é o elemento central e maior  
-- [ ] MinIO aparece como armazenamento separado do relacional  
-- [ ] Outbox aparece (não RabbitMQ)  
-- [ ] Sem OLAP/ETL Python/IA como componentes principais  
-- [ ] Loop de filtros do usuário nas estatísticas  
-- [ ] Legenda de figura no rodapé  
+- [ ] Exatamente **8 blocos** (BLOCO 1 … BLOCO 8), **cada um uma única vez**
+- [ ] **Sem** Backend (BLOCO 2) duplicado
+- [ ] Selos "BLOCO N" únicos — **sem** círculos numerados 1/2/3 repetidos entre blocos
+- [ ] BLOCO 6 (Auditoria) presente na faixa inferior
+- [ ] PostgreSQL OLTP é o elemento central e **maior**
+- [ ] MinIO separado do relacional; **sem** seta MinIO → Analítico
+- [ ] Analítico lê **somente** do OLTP (SELECT agregado + cache 5 min)
+- [ ] Outbox aparece (não RabbitMQ)
+- [ ] Sem OLAP / ETL Python / IA como componentes principais
+- [ ] Loop de filtros do usuário → BLOCO 7; download exportação → MinIO
+- [ ] Título e rodapé em português
 - [ ] Texto legível em zoom 100% em A4 horizontal
 
 ---
 
 **Arquivo:** `foundationDocs/prompts/PROMPT_gerar_fluxograma_arquitetura_banco_dados.md`  
-**Versão:** 1.0 — 2026-06-23  
+**Versão:** 1.1 — 2026-06-23 (grade espacial, anti-duplicação, mapa de setas, uso Gemini)  
 **Referências:** `foundationDocs/DB/modelo-conceitual.md`, `foundationDocs/DB/00-inventario-e-decisoes.md`, `foundationDocs/analysis/analise_arquitetural_secretariaonline2.md` §3–5 e §13.3, `foundationDocs/sequenceDiagrams/transversal/10.1-outbox-notificacao.md`, RF-F5-010 e RF-F5-011

@@ -1,10 +1,10 @@
 # Índice Geral de Requisitos — SecretariaOnline2
 
 **Projeto:** SecretariaOnline2 — UFPR SEPT  
-**Versão:** 0.1 (Etapa 0 — Skeleton)  
+**Versão:** 1.0 (campanha concluída)  
 **Data:** 2026-06-23  
 **Campanha:** 12 etapas conforme `PROMPT_gerar_requisitos_funcionais_e_nao_funcionais.md`  
-**Status geral:** 🔄 Em elaboração
+**Status geral:** ✅ Concluída (Etapa 12 — revisão de cobertura)
 
 ---
 
@@ -67,45 +67,52 @@ foundationDocs/requisitos/
 
 ---
 
-## 2. Estimativa de contagem RF/RNF
+## 2. Contagem confirmada RF/RNF (Etapa 12)
 
-> Estimativa calculada na Etapa 0 com base no inventário de HUs e nas regras de derivação (§1.3).  
-> Valores serão confirmados ao término da Etapa 12 (revisão de cobertura).
+> Valores finais após revisão de cobertura — substituem as estimativas da Etapa 0.
 
-### 2.1 Estimativa de Requisitos Funcionais (RF)
+### 2.1 Requisitos Funcionais (RF) — confirmado
 
-| Fase | HUs | RF mínimo (1×) | RF esperado (média 1,5×) | RF máximo (2×) | Observação |
-|------|----:|:--------------:|:------------------------:|:--------------:|-----------|
-| F0 — Público | 7 | 7 | 11 | 14 | Inclui verificadores públicos (RF próprios) |
-| F1 — Aluno | 11 | 11 | 17 | 22 | Fase mais rica; dashboard, solicitações, formativas, presença, TCC |
-| F2 — Egresso | 1 | 1 | 2 | 2 | Portal read-only pós-colação |
-| F3 — Professor | 7 | 7 | 10 | 14 | Eventos, deliberar, orientação TCC/estágio |
-| F4 — Comissões | 2 | 2 | 3 | 4 | CAAF e COE |
-| F5 — Secretaria | 12 | 12 | 18 | 24 | Fase mais ampla; cadastros, diplomas, import/export |
-| F6 — Coordenação | 2 | 2 | 3 | 4 | Config curso, relatórios |
-| F7 — Admin | 7 | 7 | 10 | 14 | IAM, workflow engine, outbox, auditoria |
-| F8 — Cross-cutting | 2 | 2 | 3 | 4 | Busca global, FAQ |
-| Transversais | — | 8 | 8 | 8 | Conforme §5 do PROMPT (RF-TR-001 a 008) |
-| **Total** | **51** | **59** | **85** | **110** | |
+| Fase / escopo | HUs | RFs gerados | Arquivo |
+|---------------|----:|:-----------:|---------|
+| F0 — Público | 7 | 7 | `por-fase/RF-F0-publico.md` |
+| F1 — Aluno | 11 | 14 | `por-fase/RF-F1-aluno.md` |
+| F2 — Egresso | 1 | 1 | `por-fase/RF-F2-egresso.md` |
+| F3 — Professor | 7 | 9 | `por-fase/RF-F3-professor.md` |
+| F4 — Comissões | 2 | 2 | `por-fase/RF-F4-comissoes.md` |
+| F5 — Secretaria | 12 | 18 | `por-fase/RF-F5-secretaria.md` |
+| F6 — Coordenação | 2 | 2 | `por-fase/RF-F6-coordenacao.md` |
+| F7 — Admin | 7 | 8 | `por-fase/RF-F7-admin.md` |
+| F8 — Cross-cutting | 2 | 2 | `por-fase/RF-F8-cross-cutting.md` |
+| Transversais | — | 8 | `por-fase/RF-TR-transversais.md` |
+| **Total** | **51** | **71** | 10 arquivos |
 
-**Estimativa de trabalho:** ~75–90 RFs (faixa conservadora adotada).
+Subdivisões DEC-001: US-F1-003 (3), US-F1-005 (3), US-F3-002 (2), US-F3-003 (2), US-F5-002 (3), US-F5-004 (3), US-F5-005 (2), US-F5-008 (2), US-F7-002 (2).
 
-### 2.2 Estimativa de Requisitos Não Funcionais (RNF)
+### 2.2 Requisitos Não Funcionais (RNF) — confirmado
 
-| Categoria | Sigla | RNF estimados | Principais fontes |
-|-----------|-------|:-------------:|-------------------|
-| Segurança | RNF-SEC | 8–10 | `security-engineer.md`, `.cursorrules §Security` |
-| Desempenho | RNF-DES | 5–6 | `.cursorrules §Success Metrics`, `analise §17.3` |
-| Disponibilidade | RNF-DIS | 3–4 | `devops-engineer.md`, `docker-compose` |
-| Usabilidade / Acessibilidade | RNF-UX | 4–5 | `ux-ui-specialist.md`, CAs a11y das HUs |
-| Manutenibilidade | RNF-MAN | 4–5 | `analise §17.1–17.2`, ADR-003 |
-| Confiabilidade | RNF-CON | 3–4 | Outbox, Flyway, transações |
-| Portabilidade | RNF-POR | 2–3 | Stack web + mobile |
-| Compatibilidade | RNF-CMP | 2–3 | OpenAPI, navegadores, PostgreSQL 16 |
-| Conformidade legal | RNF-LGL | 2–3 | LGPD, auditoria imutável |
-| **Total** | | **33–43** | |
+| Categoria | Sigla | Quantidade |
+|-----------|-------|:----------:|
+| Segurança | RNF-SEC | 10 |
+| Desempenho | RNF-DES | 6 |
+| Disponibilidade | RNF-DIS | 4 |
+| Usabilidade / Acessibilidade | RNF-UX | 5 |
+| Manutenibilidade | RNF-MAN | 5 |
+| Confiabilidade | RNF-CON | 4 |
+| Portabilidade | RNF-POR | 3 |
+| Compatibilidade | RNF-CMP | 3 |
+| Conformidade legal | RNF-LGL | 2 |
+| **Total** | | **42** |
 
-**Estimativa de trabalho:** ~35–45 RNFs (faixa conservadora adotada).
+Arquivo: `02-requisitos-nao-funcionais.md`
+
+### 2.3 Estimativa original (Etapa 0 — referência histórica)
+
+| Métrica | Estimativa Etapa 0 | Confirmado Etapa 12 |
+|---------|:------------------:|:-------------------:|
+| RF total | ~75–90 | **71** |
+| RNF total | ~35–45 | **42** |
+| HUs cobertas | 51/51 | **51/51** ✅ |
 
 ---
 
@@ -226,14 +233,14 @@ foundationDocs/requisitos/
 
 | ID sugerido | Tema | Fontes | Prioridade | Status |
 |-------------|------|--------|:----------:|:------:|
-| RF-TR-001 | Motor genérico de solicitações (19 tipos via RequestType) | ADR-003, MVP v2, US-F7-003 | P0 | ⬜ |
-| RF-TR-002 | Hub de comunicação + entrega assíncrona (Outbox) | `analise §7`, US-F7-005 | P1 | ⬜ |
-| RF-TR-003 | Emissão e verificação de certificados anti-fraude | `analise §11`, US-F0-007, US-F1-010 | P1 | ⬜ |
-| RF-TR-004 | Auditoria imutável de comandos | US-F7-006, `security-engineer` | P0 | ⬜ |
-| RF-TR-005 | Autorização FGAC + UI orientada a HATEOAS `_links` | ADR-002, `.cursorrules` | P0 | ⬜ |
-| RF-TR-006 | BFF de dashboard contextual por perfil | fluxos, US-F1-001, US-F3-001, US-F5-001 | P0 | ⬜ |
-| RF-TR-007 | Notificações push + e-mail com fallback | `analise §7`, comunicacao | P1 | ⬜ |
-| RF-TR-008 | Presença em eventos formativos v4.1 (modos configuráveis) | `endpoints v4.1`, `analise §10` | P1 | ⬜ |
+| RF-TR-001 | Motor genérico de solicitações (19 tipos via RequestType) | ADR-003, MVP v2, US-F7-003 | P0 | ✅ |
+| RF-TR-002 | Hub de comunicação + entrega assíncrona (Outbox) | `analise §7`, US-F7-005 | P1 | ✅ |
+| RF-TR-003 | Emissão e verificação de certificados anti-fraude | `analise §11`, US-F0-007, US-F1-010 | P1 | ✅ |
+| RF-TR-004 | Auditoria imutável de comandos | US-F7-006, `security-engineer` | P0 | ✅ |
+| RF-TR-005 | Autorização FGAC + UI orientada a HATEOAS `_links` | ADR-002, `.cursorrules` | P0 | ✅ |
+| RF-TR-006 | BFF de dashboard contextual por perfil | fluxos, US-F1-001, US-F3-001, US-F5-001 | P0 | ✅ |
+| RF-TR-007 | Notificações push + e-mail com fallback | `analise §7`, comunicacao | P1 | ✅ |
+| RF-TR-008 | Presença em eventos formativos v4.1 (modos configuráveis) | `endpoints v4.1`, `analise §10` | P1 | ✅ |
 
 ---
 
@@ -244,10 +251,20 @@ foundationDocs/requisitos/
 | Métrica | Meta | Atual |
 |---------|:----:|:-----:|
 | HUs com ≥ 1 RF mapeado | 51/51 (100%) | **51/51 (100%)** ✅ |
-| RF gerados (funcional) | ~75–90 | **63** |
+| RF gerados (funcional) | ~75–90 | **71** (63 fase + 8 TR) |
 | RNF gerados | ~35–45 | **42** ✅ |
 | RNF com métrica verificável | 100% | **100%** ✅ |
-| RF P0 cobrindo walking skeleton | 100% | — |
+| RF P0 cobrindo walking skeleton (MVP v1) | 100% | **100%** ✅ |
+
+### 4.1 Walking skeleton — RF P0 (MVP v1)
+
+| HU MVP v1 | RF | RF-TR suporte |
+|-----------|-----|---------------|
+| US-F0-001 Login | RF-F0-001 | RF-TR-004, RF-TR-005 |
+| US-F1-001 Dashboard | RF-F1-001 | RF-TR-006 |
+| US-F1-002 Primeiro acesso | RF-F1-002 | RF-TR-004, RF-TR-005 |
+
+Transversais P0 adicionais exigidos pela arquitetura baseline: RF-TR-001 (motor solicitações — MVP v2), RF-TR-004 (auditoria), RF-TR-005 (FGAC/HATEOAS), RF-TR-006 (BFF).
 
 ---
 
@@ -266,9 +283,37 @@ foundationDocs/requisitos/
 | 8 | RF F6 — Coordenação (2 HUs) | ✅ | `por-fase/RF-F6-coordenacao.md` |
 | 9 | RF F7 — Admin (7 HUs → 8 RFs) | ✅ | `por-fase/RF-F7-admin.md` |
 | 10 | RF F8 — Cross-cutting (2 HUs) | ✅ | `por-fase/RF-F8-cross-cutting.md` |
-| 11 | RF transversais (§5 PROMPT) + revisão | ⬜ | `por-fase/RF-TR-transversais.md` |
-| 12 | Revisão de cobertura total | ⬜ | Atualização deste índice |
+| 11 | RF transversais (§5 PROMPT) + revisão | ✅ | `por-fase/RF-TR-transversais.md` |
+| 12 | Revisão de cobertura total | ✅ | `00-indice-requisitos.md`, `02-requisitos-nao-funcionais.md` (RNF-SEC-04) |
 
 ---
 
-*Última atualização: 2026-06-23 — Etapa 10 concluída (2 RFs F8; 51/51 HUs cobertas)*
+## 6. Checklist de qualidade — campanha encerrada (Etapa 12)
+
+Conforme PROMPT §7:
+
+| # | Critério | Status |
+|---|----------|:------:|
+| 1 | 51/51 HUs mapeadas na matriz §3 | ✅ |
+| 2 | Nenhum RF sem ator e sem CA testável | ✅ (amostragem por fase — todos os 71 RFs seguem template) |
+| 3 | Nenhum RNF sem métrica verificável | ✅ (42/42) |
+| 4 | RNs consolidadas nos RFs — não duplicadas como RF redundante | ✅ |
+| 5 | Prioridades P0 alinhadas a MVP v1 (US-F0-001, US-F1-001, US-F1-002) | ✅ §4.1 |
+| 6 | Presença v4.1 sem geofence/trust score/aula regular | ✅ RF-TR-008, RF-F1-009, RF-F3-002, RF-F5-008 |
+| 7 | Certificados: sistema gera PDF — nunca upload externo | ✅ RF-TR-003, RF-F0-007, RF-F1-010, RNF-LGL-02 |
+| 8 | Numeração `RF-Fx-NNN` sequencial por fase | ✅ |
+| 9 | Numeração `RNF-{CAT}-NN` por categoria | ✅ |
+| 10 | Conflitos legado documentados | ✅ `00-inventario-e-decisoes.md` CONF-001 a CONF-004 |
+| 11 | Linguagem acadêmica adequada ao TCC | ✅ |
+
+### 6.1 Ações corretivas da revisão
+
+| Item | Ação |
+|------|------|
+| CONF-004 | RNF-SEC-04 atualizado: **5 tentativas/min** (US-F0-001), não 15 min; bloqueio de conta 10 falhas/15 min documentado |
+| Q-004 | RF-TR-008 canônico para presença; fases F1/F3/F5 referenciam |
+| Contagem RF | Confirmado **71** (63 fase + 8 TR) — dentro da faixa estimada |
+
+---
+
+*Última atualização: 2026-06-23 — Etapa 12 concluída — campanha de requisitos encerrada*

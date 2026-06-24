@@ -93,13 +93,13 @@
 | **ID** | RNF-SEC-04 |
 | **Categoria** | Segurança |
 | **Prioridade** | P0 |
-| **Fonte** | `agents/security-engineer.md §Rate Limiting`; US-F0-001 CAs 4–5; `.cursorrules §Security Baseline` |
+| **Fonte** | US-F0-001 RN-F0.1-06, RN-F0.1-07, RN-F0.1-09; `fluxos_por_perfil.md` §1 F0.1; RF-F0-001; CONF-004 (precedência HU > agents) |
 
-**Descrição:** O sistema deve limitar tentativas de autenticação para mitigar ataques de força bruta. O limite por par `IP + identificador` é de 5 tentativas por 15 minutos na rota `POST /auth/login`. O endpoint de recuperação de senha (`POST /auth/recuperar-senha`) deve ter limite de 3 tentativas por hora por IP. Quando o limite é excedido, o sistema retorna HTTP 429 com corpo RFC 7807.
+**Descrição:** O sistema deve limitar tentativas de autenticação para mitigar ataques de força bruta. Na rota `POST /auth/login`, o limite é de **5 tentativas por minuto** por par `IP + identificador` (Bucket4j). Após **10 falhas consecutivas** para o mesmo identificador, a conta é bloqueada por **15 minutos** (resposta externa anti-enumeração idêntica à de credencial inválida). O endpoint de recuperação de senha (`POST /auth/recuperar-senha`) mantém limite de **3 tentativas por hora** por IP. Quando o rate limit é excedido, o sistema retorna HTTP 429 com corpo RFC 7807.
 
-**Métrica:** HTTP 429 retornado na 6ª tentativa de login dentro de 15 minutos para o mesmo par `IP + identificador`; header `Retry-After` presente na resposta 429.
+**Métrica:** HTTP 429 retornado na 6ª tentativa de login dentro de 1 minuto para o mesmo par `IP + identificador`; header `Retry-After` presente na resposta 429; bloqueio de conta após 10 falhas consecutivas com duração de 15 minutos verificável em teste.
 
-**Verificação:** Teste de integração com Bucket4j configurado; teste de carga controlado com JMeter simulando 6 tentativas consecutivas.
+**Verificação:** Teste de integração com Bucket4j (6 tentativas em &lt; 1 min → 429); teste de bloqueio após 10 falhas; alinhado com CA-F0-001-04/05 da HU.
 
 **RF relacionados:** RF-F0-001, RF-F0-002
 
@@ -941,4 +941,4 @@
 
 ---
 
-*Última atualização: 2026-06-23 — Etapa 1 concluída*
+*Última atualização: 2026-06-23 — Etapa 12: RNF-SEC-04 alinhado a US-F0-001 (5/min; CONF-004 resolvido)*
