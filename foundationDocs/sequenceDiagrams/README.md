@@ -162,27 +162,27 @@ Usada por **Modo fila** (Loop / Cursor Automation). O agente processa **um** ite
 
 | 31 | US-F5-003 | `HUs/F5 — Secretaria/US-F5-003-GESTAO-ALUNOS.md` | `F5/US-F5-003-GESTAO-ALUNOS.md` | feito | F5.6-D01 (busca+HATEOAS) · D02 (POST+audit+outbox) · D03 (PATCH+audit) · D04 (reset-password+Argon2id+outbox) · D05 (matricula+vagas) · ERRO-01 (409 GRR/CPF) · ERRO-02 (422 sem vagas) · ERRO-03 (403 FGAC) |
 
-| 32 | US-F5-004 | `HUs/F5 — Secretaria/US-F5-004-DADOS-ACADEMICOS.md` | `F5/US-F5-004-DADOS-ACADEMICOS.md` | feito | F5.7-D01 (criar curso+secretários+audit) · F5.8-D02 (criar disciplina) · F5.8-D03 (desativar PATCH) · F5.8-D04 (CSV) · F5.9-D05 (período letivo+sobreposição) · F5.9-D06 (evento calendário) · ERRO-01 (409 sigla) · ERRO-02 (422 overlap) · DRY → F5.6-D01/D03/ERRO-03 |
+| 32 | US-F5-004 | `HUs/F5 — Secretaria/US-F5-004-DADOS-ACADEMICOS.md` | `F5/US-F5-004-DADOS-ACADEMICOS.md` | feito | F5.7-D01 (criar curso+secretários+audit) · F5.8-D02 (criar disciplina) · F5.8-D03 (desativar PATCH) · F5.8-D04-CSV (export CSV) · F5.9-D05 (período letivo+sobreposição) · F5.9-D06 (evento calendário) · ERRO-01 (409 sigla) · ERRO-02 (422 overlap) · DRY → F5.6-D01/D03/ERRO-03 |
 
-| 33 | US-F5-005 | `HUs/F5 — Secretaria/US-F5-005-EGRESSOS-DIPLOMAS.md` | `F5/US-F5-005-EGRESSOS-DIPLOMAS.md` | feito | F5.10-D01 (listar egressos) · F5.11-D02 (elegíveis+5 critérios) · F5.11-D03 (TX colação lote+role→EGRESSO+outbox×N) · F5.11-D04 (PATCH entrega física) · ERRO-01 (403 diploma.register) · DRY → 10.1b, F2.1-D01 |
+| 33 | US-F5-005 | `HUs/F5 — Secretaria/US-F5-005-EGRESSOS-DIPLOMAS.md` | `F5/US-F5-005-EGRESSOS-DIPLOMAS.md` | feito | F5.10-D01-EGRESSOS (listar egressos) · F5.11-D02-ELEGIVEIS (elegíveis+5 critérios) · F5.11-D03 (TX colação lote+role→EGRESSO+outbox×N) · F5.11-D04 (PATCH entrega física) · ERRO-01 (403 diploma.register) · DRY → 10.1b, F2.1-D01 |
 
 | 34 | US-F5-006 | `HUs/F5 — Secretaria/US-F5-006-AUTORIZACOES-IMAGEM.md` | `F5/US-F5-006-AUTORIZACOES-IMAGEM.md` | feito | F5.12-D01 (lista+presigned MinIO) · F5.12-D02 (bulk-deliberate SELECT FOR UPDATE+TX×N+outbox×N) · ERRO-01 (409 concorrência pré-TX) · DRY → F5.2-D01, F4.1d, 10.1 |
 
 | 35 | US-F5-007 | `HUs/F5 — Secretaria/US-F5-007-ATENDIMENTOS.md` | `F5/US-F5-007-ATENDIMENTOS.md` | feito | F5.13-D01 (GET categorias + Combobox aluno) · F5.13-D02 (presigned PUT MinIO + POST + TX + outbox) · DRY → F5.3-D02, F1.8-D03, 10.1, F1.20-D01 |
 
-| 36 | US-F5-008 | `HUs/F5 — Secretaria/US-F5-008-EVENTOS.md` | `F5/US-F5-008-EVENTOS.md` | feito | F5.8-D01 (lista scope secretaria) · F5.8-D04 (encerrar+formative_entry+outbox) · F5.8-ERRO (422 excluir com presença) · DRY → F3.2-D01, D03, D04, ERRO, 10.4 |
+| 36 | US-F5-008 | `HUs/F5 — Secretaria/US-F5-008-EVENTOS.md` | `F5/US-F5-008-EVENTOS.md` | feito | F5.8-D01 (lista scope secretaria) · F5.14-D02 (encerrar+formative_entry+outbox) · F5.8-ERRO (422 excluir com presença) · DRY → F3.2-D01, D03, D04, ERRO, 10.4 |
 
 | 37 | US-F5-009 | `HUs/F5 — Secretaria/US-F5-009-IMPORTACOES.md` | `F5/US-F5-009-IMPORTACOES.md` | feito | F5.9-D01 (baixar modelo) · F5.9-D02 (upload+polling+preview) · F5.9-D03 (confirmar lotes+audit_log+outbox) · F5.9-ERRO-D04 (PARTIAL TX lote 2 falha) · F5.9-ERRO-403 (import.run) · DRY → 10.1 |
 
-| 38 | US-F5-010 | `HUs/F5 — Secretaria/US-F5-010-EXPORTACOES.md` | `F5/US-F5-010-EXPORTACOES.md` | feito | F5.10-D01 (POST /exports→202) · F5.10-D02 (worker CSV→MinIO→PRONTO+outbox) · F5.10-D03 (polling PRONTO+download presigned) · F5.10-D04 (scheduler EXPIRADO) · F5.10-ERRO-403 · DRY → 10.1 |
+| 38 | US-F5-010 | `HUs/F5 — Secretaria/US-F5-010-EXPORTACOES.md` | `F5/US-F5-010-EXPORTACOES.md` | feito | F5.17-D01 (POST /exports→202) · F5.10-D02 (worker CSV→MinIO→PRONTO+outbox) · F5.10-D03 (polling PRONTO+download presigned) · F5.10-D04 (scheduler EXPIRADO) · F5.10-ERRO-403 · DRY → 10.1 |
 
-| 39 | US-F5-011 | `HUs/F5 — Secretaria/US-F5-011-ESTATISTICAS.md` | `F5/US-F5-011-ESTATISTICAS.md` | feito | F5.11-D01 (cache MISS GET /reports/secretary + 4 datasets) · F5.11-D02 (cache HIT + refresh manual) · F5.11-ERRO-403 · DRY → F1.1-D01/D02, F6.2 |
+| 39 | US-F5-011 | `HUs/F5 — Secretaria/US-F5-011-ESTATISTICAS.md` | `F5/US-F5-011-ESTATISTICAS.md` | feito | F5.18-D01 (cache MISS GET /reports/secretary + 4 datasets) · F5.18-D02 (cache HIT + refresh manual) · F5.11-ERRO-403 · DRY → F1.1-D01/D02, F6.2 |
 
 | 40 | US-F5-012 | `HUs/F5 — Secretaria/US-F5-012-TAREFAS.md` | `F5/US-F5-012-TAREFAS.md` | feito | F5.19-D01 (GET kanban) . D02 (POST criar) . D03 (PATCH estado) . D04 (DELETE PENDENTE) . ERRO-01..04 |
 
 | 41 | US-F6-001 | `HUs/F6 — Coordenação/US-F6-001-CONFIGURAR-CURSO.md` | `F6/US-F6-001-CONFIGURAR-CURSO.md` | feito | F6.1-D01 (GET config) · F6.1-D02 (PATCH+TX+audit_log) · F6.1-ERRO (403 curso alheio) |
 
-| 42 | US-F6-002 | `HUs/F6 — Coordenação/US-F6-002-RELATORIOS.md` | `F6/US-F6-002-RELATORIOS.md` | feito | F6.2-D01 (GET cache MISS + métricas analíticas) · F6.2-D02 DRY→F5.11-D02 · F6.2-ERRO DRY→F5.11-ERRO-403 |
+| 42 | US-F6-002 | `HUs/F6 — Coordenação/US-F6-002-RELATORIOS.md` | `F6/US-F6-002-RELATORIOS.md` | feito | F6.2-D01 (GET cache MISS + métricas analíticas) · F6.2-D02 DRY→F5.18-D02 · F6.2-ERRO DRY→F5.11-ERRO-403 |
 
 | 43 | US-F7-001 | `HUs/F7 — Admin/US-F7-001-IAM-USUARIOS.md` | `F7/US-F7-001-IAM-USUARIOS.md` | feito | F7.1-D01 (listar+filtrar) · D02 (criar+outbox) · D03 (desativar+JTI blacklist) · F7.8-D04 (reset senha+JWT 1-uso+outbox) · ERRO-01 (403 FGAC) · DRY → F0.3-b (CA-05) · CA-06 DRY→D01 |
 

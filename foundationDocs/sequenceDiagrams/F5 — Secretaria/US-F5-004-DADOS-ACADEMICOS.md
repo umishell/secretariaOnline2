@@ -13,7 +13,7 @@
 | F5.7-D01 | CA-F5-004-01 · RN-F5-004-03 — criar curso + vínculo secretários + audit_log | SEQUENCIA | gerado |
 | F5.8-D02 | CA-F5-004-03 — criar disciplina (POST /secretaria/disciplinas + audit_log) | SEQUENCIA | gerado |
 | F5.8-D03 | CA-F5-004-04 · RN-F5-004-07 — desativar disciplina (PATCH ativa=false + audit_log) | SEQUENCIA | gerado |
-| F5.8-D04 | RN-F5-004-08 — exportar CSV de disciplinas (GET ?format=csv) | SEQUENCIA | gerado |
+| F5.8-D04-CSV | RN-F5-004-08 — exportar CSV de disciplinas (GET ?format=csv) | SEQUENCIA | gerado |
 | F5.9-D05 | CA-F5-004-05 — criar período letivo (POST /calendars/periods + validação sobreposição + audit_log) | SEQUENCIA | gerado |
 | F5.9-D06 | CA-F5-004-07 — criar evento de calendário (POST /calendars/events + audit_log) | SEQUENCIA | gerado |
 | F5.7-ERRO-01 | CA-F5-004-02 · RN-F5-004-02 — 409 sigla de curso duplicada | ERRO | gerado |
@@ -178,7 +178,7 @@ sequenceDiagram
 
 ---
 
-## F5.8-D04 — Exportar CSV de disciplinas (GET ?format=csv)
+## F5.8-D04-CSV — Exportar CSV de disciplinas (GET ?format=csv)
 
 **Escopo:** happy path — secretária exporta disciplinas do curso corrente em formato CSV  
 **Atores:** Secretaria, WebApp, JwtFilter, SubjectController, Postgres  

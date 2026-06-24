@@ -1,0 +1,17 @@
+erDiagram
+    direction TB
+    %% Parte 3/4 — Formativas + Estágio + TCC
+    USUARIO }o--|| CURSO : vinculado
+    CURSO ||--o{ FORMATIVE_ACTIVITY : valida_para
+    FORMATIVE_ACTIVITY ||--o{ FORMATIVE_ENTRY : classifica
+    USUARIO ||--o{ FORMATIVE_ENTRY : submete
+    USUARIO ||--o{ FORMATIVE_ENTRY : revisa
+    USUARIO ||--o{ INTERNSHIP : aluno
+    USUARIO ||--o{ INTERNSHIP : orientador
+    USUARIO ||--o{ INTERNSHIP : coe
+    INTERNSHIP ||--o{ INTERNSHIP_DOCUMENT : documentos
+    CURSO ||--o{ TCC : pertence
+    TCC ||--o{ TCC_MEMBER : equipe
+    TCC ||--o{ TCC_EXAMINER : banca
+    USUARIO ||--o{ TCC_MEMBER : membro
+    USUARIO ||--o{ TCC_EXAMINER : examinador

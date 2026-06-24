@@ -10,7 +10,7 @@
 
 | ID diagrama | Origem (CA / RN / sub-fluxo) | Tipo | Status |
 |-------------|------------------------------|------|--------|
-| F5.10-D01 | CA-F5-010-01 · RN-F5-010-03 · 04 — Solicitar exportação: POST /exports/:kind → 202 + export_job PROCESSANDO | SEQUENCIA | gerado |
+| F5.17-D01 | CA-F5-010-01 · RN-F5-010-03 · 04 — Solicitar exportação: POST /exports/:kind → 202 + export_job PROCESSANDO | SEQUENCIA | gerado |
 | F5.10-D02 | RN-F5-010-04 · 08 — Job assíncrono: worker gera CSV → PUT MinIO → UPDATE PRONTO + outbox TX | SEQUENCIA | gerado |
 | F5.10-D03 | CA-F5-010-02 · RN-F5-010-05 · 06 · 07 — Polling detecta PRONTO + download via presigned URL MinIO | SEQUENCIA | gerado |
 | F5.10-D04 | CA-F5-010-03 · RN-F5-010-06 · 09 — Scheduler expira job: DELETE MinIO + UPDATE EXPIRADO | SEQUENCIA | gerado |
@@ -48,7 +48,7 @@
 
 ---
 
-## F5.10-D01 — Solicitar exportação (POST /exports/:kind → 202)
+## F5.17-D01 — Solicitar exportação (POST /exports/:kind → 202)
 
 **Escopo:** happy path — secretaria seleciona kind, informa filtros e solicita exportação; backend cria export_job assíncrono  
 **Atores:** Secretaria, WebApp, JwtFilter, ExportController, CreateExportUseCase, Postgres  

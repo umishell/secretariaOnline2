@@ -1,0 +1,18 @@
+erDiagram
+    direction TB
+    %% Parte 4/4 — Comunicação + Presença + Certificado + Auditoria + Outbox
+    USUARIO }o--|| CURSO : vinculado
+    USUARIO ||--o{ COMMUNICATION : publica
+    CURSO ||--o{ COMMUNICATION : alvo
+    COMMUNICATION ||--o{ COMMUNICATION_DELIVERY : envios
+    COMMUNICATION_DELIVERY }o--|| USUARIO : destinatario
+    USUARIO ||--|| NOTIFICATION_PREFERENCE : preferencias
+    CURSO ||--o{ EVENT_ATTENDANCE : evento
+    USUARIO ||--o{ EVENT_ATTENDANCE : organiza
+    EVENT_ATTENDANCE ||--o{ ATTENDANCE_SESSION : sessoes
+    USUARIO ||--o{ ATTENDANCE_SESSION : aluno
+    USUARIO ||--o{ CERTIFICATE : beneficiario
+    EVENT_ATTENDANCE ||--o| CERTIFICATE : origem_evento
+    FORMATIVE_ENTRY ||--o| CERTIFICATE : origem_formativa
+    USUARIO ||--o{ AUDIT_LOG : ator
+    OUTBOX_EVENT

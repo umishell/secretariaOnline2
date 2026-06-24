@@ -11,7 +11,7 @@
 | ID diagrama | Origem (CA / RN / sub-fluxo) | Tipo | Status |
 |-------------|------------------------------|------|--------|
 | F5.8-D01 | CA-F5-008-01 · RN-F5-008-02 · RN-F5-008-03 · RN-F5-008-05 — lista de eventos (scope secretaria, filtros, _links condicional) | SEQUENCIA | gerado |
-| F5.8-D04 | CA-F5-008-04 · RN-F5-008-10 · RN-F5-008-11 — encerrar evento: formative_entry lote + outbox certificado | SEQUENCIA | gerado |
+| F5.14-D02 | CA-F5-008-04 · RN-F5-008-10 · RN-F5-008-11 — encerrar evento: formative_entry lote + outbox certificado | SEQUENCIA | gerado |
 | F5.8-ERRO | CA-F5-008-05 · RN-F5-008-06 — 422 excluir evento com presença já registrada | ERRO | gerado |
 | — | CA-F5-008-02 · RN-F5-008-04 — criar evento (POST /events; formulário F3.2a reutilizado) | DRY | → [F3.2-D01](../F3/US-F3-002-EVENTOS.md#F3.2-D01) |
 | — | CA-F5-008-03 · RN-F5-008-08 — painel operação QR_SINGLE (frame F5.15 = instância F3.2c) | DRY | → [F3.2-D03](../F3/US-F3-002-EVENTOS.md#F3.2-D03) |
@@ -97,7 +97,7 @@ sequenceDiagram
 
 ---
 
-## F5.8-D04 — Encerrar evento: formative_entry + outbox certificado
+## F5.14-D02 — Encerrar evento: formative_entry + outbox certificado
 
 **Escopo:** secretaria encerra evento EM_ANDAMENTO; backend processa presenças, gera formative_entry em lote e enfileira emissão de certificados via outbox  
 **Atores:** Secretaria, WebApp, JwtFilter, EventController, CloseEventUseCase, Postgres  

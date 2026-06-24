@@ -10,15 +10,15 @@
 
 | ID diagrama | Origem (CA / RN / sub-fluxo) | Tipo | Status |
 |-------------|------------------------------|------|--------|
-| F5.10-D01 | CA-F5-005-01 · RN-F5-005-02 · RN-F5-005-03 — listar egressos (GET + filtros) | SEQUENCIA | gerado |
-| F5.11-D02 | CA-F5-005-02 · RN-F5-005-07 · RN-F5-005-12 — buscar elegíveis + verificação 5 critérios | SEQUENCIA | gerado |
+| F5.10-D01-EGRESSOS | CA-F5-005-01 · RN-F5-005-02 · RN-F5-005-03 — listar egressos (GET + filtros) | SEQUENCIA | gerado |
+| F5.11-D02-ELEGIVEIS | CA-F5-005-02 · RN-F5-005-07 · RN-F5-005-12 — buscar elegíveis + verificação 5 critérios | SEQUENCIA | gerado |
 | F5.11-D03 | CA-F5-005-03 · RN-F5-005-09 · RN-F5-005-10 · §5.2 F5.11/F5.11b/F5.11c — confirmar colação em lote (TX: graduation_record + role→EGRESSO + outbox × N + audit_log) | SEQUENCIA | gerado |
 | F5.11-D04 | CA-F5-005-05 · RN-F5-005-11 — confirmar entrega física (PATCH confirm-delivery + audit_log) | SEQUENCIA | gerado |
 | F5.11-ERRO-01 | RN-F5-005-06 — 403 FGAC `diploma.register` ausente | ERRO | gerado |
-| — | CA-F5-005-04 (aluno inelegível — checkbox desabilitado + tooltip) | DRY | → F5.11-D02 (`eligible: false` + `bloqueio: {razao, detalhe}` na resposta — renderização client-side) |
+| — | CA-F5-005-04 (aluno inelegível — checkbox desabilitado + tooltip) | DRY | → F5.11-D02-ELEGIVEIS (`eligible: false` + `bloqueio: {razao, detalhe}` na resposta — renderização client-side) |
 | — | RN-F5-005-01 (403 `alumni.list` ausente) | DRY | → [`F5/US-F5-003-GESTAO-ALUNOS.md`](US-F5-003-GESTAO-ALUNOS.md) F5.6-ERRO-03 (padrão 403 FGAC) |
 | — | RN-F5-005-04 (criar egresso manual — excepcional) | DRY | → F5.11-D03 (fluxo automático; criação manual = mesmo `POST /graduations` com 1 alunoId) |
-| — | RN-F5-005-05 (exportação CSV egressos) | DRY | → [`F5/US-F5-004-DADOS-ACADEMICOS.md`](US-F5-004-DADOS-ACADEMICOS.md) F5.8-D04 (mesmo padrão `GET ?format=csv`) |
+| — | RN-F5-005-05 (exportação CSV egressos) | DRY | → [`F5/US-F5-004-DADOS-ACADEMICOS.md`](US-F5-004-DADOS-ACADEMICOS.md) F5.8-D04-CSV (mesmo padrão `GET ?format=csv`) |
 | — | RN-F5-005-08 (wizard 2 passos — navegação client-side) | NAO_APLICAVEL | — |
 | — | DS/Skeleton, DS/EmptyState, Checkbox multiselect (visual) | NAO_APLICAVEL | — |
 | — | Responsividade | NAO_APLICAVEL | — |
@@ -35,7 +35,7 @@
 | Dashboard Egresso (efeito downstream de F5.11-D03) | [`F2/US-F2-001-DASHBOARD-EGRESSO.md`](../F2/US-F2-001-DASHBOARD-EGRESSO.md) F2.1-D01 |
 | 403 FGAC capability ausente | [`F5/US-F5-003-GESTAO-ALUNOS.md`](US-F5-003-GESTAO-ALUNOS.md) F5.6-ERRO-03 |
 | JWT validation + JwtFilter | [`F0/US-F0-001-LOGIN.md`](../F0/US-F0-001-LOGIN.md) F0.1-a |
-| Exportação CSV síncrona | [`F5/US-F5-004-DADOS-ACADEMICOS.md`](US-F5-004-DADOS-ACADEMICOS.md) F5.8-D04 |
+| Exportação CSV síncrona | [`F5/US-F5-004-DADOS-ACADEMICOS.md`](US-F5-004-DADOS-ACADEMICOS.md) F5.8-D04-CSV |
 
 ---
 
@@ -44,14 +44,14 @@
 | Item | Motivo |
 |------|--------|
 | Wizard 2 passos — navegação client-side (RN-F5-005-08) | Transição entre Passo 1 (lista elegíveis) e Passo 2 (dados cerimônia) é roteamento frontend; sem chamada HTTP entre passos. |
-| Aluno inelegível — checkbox desabilitado + tooltip (CA-F5-005-04) | Renderização client-side derivada de `eligible: false` e `bloqueio` presentes na resposta de F5.11-D02; sem HTTP adicional. |
+| Aluno inelegível — checkbox desabilitado + tooltip (CA-F5-005-04) | Renderização client-side derivada de `eligible: false` e `bloqueio` presentes na resposta de F5.11-D02-ELEGIVEIS; sem HTTP adicional. |
 | DS/Skeleton, DS/EmptyState, Checkbox multiselect | Lógica visual frontend; sem variação de participantes backend. |
 | Emissão PDF de diploma (fora de escopo desta HU) | Processo externo ao sistema; sem endpoint mapeado nesta HU. |
 | Reemissão de diploma por perda | Fluxo de solicitação — ver módulo US-F1-005. |
 
 ---
 
-## F5.10-D01 — Listar egressos (GET /secretaria/egressos + filtros — happy path)
+## F5.10-D01-EGRESSOS — Listar egressos (GET /secretaria/egressos + filtros — happy path)
 
 **Escopo:** happy path — secretária acessa lista de egressos filtrada por curso, ano de colação e situação do diploma  
 **Atores:** Secretaria, WebApp, JwtFilter, EgressosController, Postgres  
@@ -82,13 +82,13 @@ sequenceDiagram
 **Notas:**
 - Passo 4: JOIN entre `usuario` (role=EGRESSO) e `graduation_record` (situacao_diploma, data_colacao); `cursoIds[]` restringe a egressos dos cursos de competência da secretária (RN-F5-005-01).
 - Passo 6: `_links` por item inclui `confirm-delivery` somente se `situacao_diploma=PENDENTE`; item com `ENTREGUE` retorna apenas `view` — HATEOAS controla ações disponíveis por linha.
-- Exportação CSV: DRY → F5.8-D04 (`GET /secretaria/egressos?format=csv` — mesmo padrão stream download) (RN-F5-005-05).
+- Exportação CSV: DRY → F5.8-D04-CSV (`GET /secretaria/egressos?format=csv` — mesmo padrão stream download) (RN-F5-005-05).
 
 **Lacunas:** nenhuma.
 
 ---
 
-## F5.11-D02 — Buscar elegíveis para colação (GET /students?eligibleForGraduation=true)
+## F5.11-D02-ELEGIVEIS — Buscar elegíveis para colação (GET /students?eligibleForGraduation=true)
 
 **Escopo:** happy path — secretária inicia wizard de colação; backend verifica 5 critérios de elegibilidade por aluno  
 **Atores:** Secretaria, WebApp, JwtFilter, GraduationController, Postgres  

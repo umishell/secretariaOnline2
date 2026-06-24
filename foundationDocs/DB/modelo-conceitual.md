@@ -6,12 +6,17 @@
 
 **Convenção:** entidades em `UPPER_SNAKE_CASE` (nome físico da tabela); apenas relacionamentos — sem atributos (Chen / TCC §0.4).
 
-**Renderizar:** copiar o bloco abaixo em [mermaid.live](https://mermaid.live) ou abrir `modelo-conceitual.mmd`.
+**Renderizar (referência completa):** copiar o bloco abaixo em [mermaid.live](https://mermaid.live) ou abrir `modelo-conceitual.mmd`.
+
+**Exportar PNG vertical para A4 / Google Docs:** o diagrama completo fica **horizontal** no mermaid.live (hub `USUARIO` com ~20 ligações — limitação do layout `dagre`). Use os **4 arquivos modulares** em [`a4/`](a4/README.md): cada parte renderiza vertical com visual erDiagram do mermaid.live; empilhe os 4 PNGs no Docs (~17 cm de largura).
+
+**Exportar PNG:** [mermaid.live](https://mermaid.live) → **Actions → PNG** (ou SVG). Para alta resolução: zoom maior antes de exportar ou `npx @mermaid-js/mermaid-cli -i arquivo.mmd -o saida.png -s 2`.
 
 ---
 
 ```mermaid
 erDiagram
+    direction TB
     %% IAM (Identidade e Acesso + sessão)
     USUARIO ||--o{ USUARIO_ROLE : possui
     USUARIO ||--o{ REFRESH_TOKEN : sessao

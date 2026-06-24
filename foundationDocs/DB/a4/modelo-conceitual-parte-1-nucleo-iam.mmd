@@ -1,0 +1,11 @@
+erDiagram
+    direction TB
+    %% Parte 1/4 — Núcleo + IAM (exportar PNG no mermaid.live)
+    USUARIO }o--|| CURSO : vinculado
+    CURSO }o--o| USUARIO : coordenado_por
+    USUARIO ||--o{ USUARIO_ROLE : possui
+    ROLE ||--o{ USUARIO_ROLE : atribuido
+    ROLE ||--o{ ROLE_AUTHORITY : concede
+    AUTHORITY ||--o{ ROLE_AUTHORITY : compoe
+    USUARIO ||--o{ REFRESH_TOKEN : sessao
+    JTI_BLACKLIST

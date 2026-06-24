@@ -11,7 +11,7 @@
 | ID diagrama | Origem (CA / RN) | Classificação | Status |
 |-------------|-----------------|---------------|--------|
 | F6.2-D01 | CA-F6-002-01..02 · RN-01,03,04,05,07,08,09,10,13 — GET cache MISS + métricas analíticas | SEQUENCIA | gerado |
-| F6.2-D02 | RN-F6-002-12 — cache HIT (staleTime=5 min, padrão F5.18) | DRY → US-F5-011 F5.11-D02 | link |
+| F6.2-D02 | RN-F6-002-12 — cache HIT (staleTime=5 min, padrão F5.18) | DRY → US-F5-011 F5.18-D02 | link |
 | F6.2-ERRO | RN-F6-002-01 — 403 `report.view_coordinator` ausente | DRY → US-F5-011 F5.11-ERRO-403 | link |
 | — | CA-F6-002-01 — DS/Skeleton Loading (UI interim enquanto GET está em voo) | NAO_APLICAVEL | — |
 | — | CA-F6-002-03 — AlertBanner threshold indeferimento (renderização condicional) | NAO_APLICAVEL | — |
@@ -29,7 +29,7 @@
 
 | Padrão | Diagrama local | Referência canônica |
 |--------|---------------|---------------------|
-| Cache HIT (staleTime=5 min) | F6.2-D02 | [`../F5/US-F5-011-ESTATISTICAS.md` — F5.11-D02](../F5/US-F5-011-ESTATISTICAS.md) |
+| Cache HIT (staleTime=5 min) | F6.2-D02 | [`../F5/US-F5-011-ESTATISTICAS.md` — F5.18-D02](../F5/US-F5-011-ESTATISTICAS.md) |
 | 403 FGAC capability ausente | F6.2-ERRO | [`../F5/US-F5-011-ESTATISTICAS.md` — F5.11-ERRO-403](../F5/US-F5-011-ESTATISTICAS.md) |
 
 **Diferença em relação ao DRY:** endpoint `/reports/coordinator` (vs `/reports/secretary`) e capability `report.view_coordinator` (vs `report.view_secretary`). O fluxo de rede e o comportamento de cache/FGAC são estruturalmente idênticos — não duplicar Mermaid.
@@ -101,7 +101,7 @@ sequenceDiagram
 
 ## F6.2-D02 — Cache HIT
 
-**DRY → [`../F5/US-F5-011-ESTATISTICAS.md` — F5.11-D02](../F5/US-F5-011-ESTATISTICAS.md)**
+**DRY → [`../F5/US-F5-011-ESTATISTICAS.md` — F5.18-D02](../F5/US-F5-011-ESTATISTICAS.md)**
 
 Padrão idêntico: TanStack Query retorna dados em memória (staleTime=5 min); nenhuma chamada ao backend. Apenas substitua:
 - Endpoint: `/reports/coordinator` (vs `/reports/secretary`)

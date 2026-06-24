@@ -1,0 +1,16 @@
+erDiagram
+    direction TB
+    %% Parte 2/4 — Acadêmico + Solicitações
+    USUARIO }o--|| CURSO : vinculado
+    CURSO ||--o{ DISCIPLINA : oferece
+    PERIODO_LETIVO ||--o{ CALENDARIO_ACADEMICO : define
+    REQUEST_TYPE ||--o{ CALENDARIO_ACADEMICO : vigencia
+    REQUEST_TYPE ||--o{ REQUEST : classifica
+    USUARIO ||--o{ REQUEST : abre
+    CURSO ||--o{ REQUEST : escopo
+    REQUEST ||--o{ REQUEST_EVENT : historico
+    REQUEST ||--o{ REQUEST_LINE_ITEM : itens
+    REQUEST ||--o{ REQUEST_ATTACHMENT : anexos
+    REQUEST_EVENT }o--|| USUARIO : ator
+    REQUEST_LINE_ITEM }o--o| DISCIPLINA : referencia
+    REQUEST_ATTACHMENT }o--|| USUARIO : enviado_por
